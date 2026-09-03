@@ -358,18 +358,13 @@ function renderModelPick(){
 function M(){ return MODEL; }
 
 /* ---------- tabs ---------- */
+/* 机型选择 section 永不隐藏；切换时隐藏 appBody 内各页 + 反馈页(t5) */
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
-  document.querySelectorAll('main section').forEach(x=>x.hidden=true);
+  document.querySelectorAll('#appBody > section').forEach(x=>x.hidden=true);
+  $('#t5').hidden=true;
   t.classList.add('on'); $('#'+t.dataset.t).hidden=false;
 });
-/* 反馈页签独立于机型选择，随时可达；其余页签维持"先选机型"门槛 */
-const fbTab=[...document.querySelectorAll('.tab')].find(x=>x.dataset.t==='t5');
-if(fbTab) fbTab.onclick=()=>{
-  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
-  document.querySelectorAll('main section').forEach(x=>x.hidden=true);
-  fbTab.classList.add('on'); $('#t5').hidden=false;
-};
 
 renderModelPick();
 
