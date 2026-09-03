@@ -326,7 +326,10 @@ function calc0(){
     if(k!=null) results.push({f,inc,k,n1,pt,d:Math.abs(k-vr)});
   }
   results.sort((a,b)=>a.d-b.d);
-  const best=results[0];
+  let best=results[0];
+  // 优先襟翼5：与VR差≤10kt内优先选襟翼5（公司常用起飞襟翼）
+  const f5=results.find(r=>r.f===5);
+  if(f5 && f5.d<=10) best=f5;
   if(best){
     $('#cfg0').textContent='FLAP '+best.f;
     $('#cfg0sub').textContent=`VREF40+${best.inc} · 速度带${(best.k-best.k%1).toFixed(0)}kt`;
