@@ -260,6 +260,8 @@ if ('serviceWorker' in navigator) {
   </div>
 </section>
 
+</div><!-- /appBody -->
+
 <!-- ══════════ TAB 5 反馈 ══════════ -->
 <section id="t5" hidden>
   <div class="card">
@@ -271,8 +273,6 @@ if ('serviceWorker' in navigator) {
     </div>
   </div>
 </section>
-
-</div><!-- /appBody -->
 </main>
 <script>
 // QRH R12(中文) PI-QRH 空速指示不可靠飞行/穿越颠簸气流 表
@@ -358,9 +358,12 @@ function renderModelPick(){
 function M(){ return MODEL; }
 
 /* ---------- tabs ---------- */
+/* 机型选择 section 在所有页面显示，仅反馈页隐藏；切换时隐藏 appBody 内各页 + 反馈页(t5) */
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
-  document.querySelectorAll('main > div[id="appBody"] > section').forEach(x=>x.hidden=true);
+  document.querySelectorAll('#appBody > section').forEach(x=>x.hidden=true);
+  $('#t5').hidden=true;
+  $('#stepM').hidden=(t.dataset.t==='t5');
   t.classList.add('on'); $('#'+t.dataset.t).hidden=false;
 });
 
