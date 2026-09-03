@@ -145,9 +145,9 @@ if ('serviceWorker' in navigator) {
       <span class="pill on" data-ga="flap1">襟翼 1</span>
       <span class="pill" data-ga="flap15">襟翼 15</span>
     </div>
-    <div class="row">
-      <label style="flex:1;min-width:200px;margin:0">重量 <b id="w3v" style="color:var(--acc)">65</b> t
-        <input type="range" id="w3" min="40" max="80" step="0.5" value="65"></label>
+    <div class="grid">
+      <div><label>重量 t</label><input type="number" id="w3" value="65" min="40" max="80" step="0.5"></div>
+      <div><label>压力高度 ft</label><input type="number" id="alt3" value="0" min="-2000" max="14000" step="500"></div>
     </div>
     <div class="result" id="gaout"></div>
     <div style="margin-top:12px;overflow-x:auto"><table id="tbl3"></table></div>
@@ -352,16 +352,26 @@ document.querySelectorAll('[data-ga]').forEach(p=>p.onclick=()=>{
 });
 function calc3(){
   if(!MODEL) return;
-  const m=M(), w=+$('#w3').value;
-  $('#w3v').textContent=w;
+  const m=M(), w=+$('#w3').value, alt=+$('#alt3').value;
   const rows=UAS_DATA[m].goaround[gaSel];
-  let out='';
-  rows.forEach(r=>{
-    const pt=interpW(r.pitch,w,m), vs=interpW(r.vs,w,m), ks=interpW(r.kias,w,m);
-    out+=`<div class="kv blue kv2"><div class="l">${r.alt===0?'海平面':r.alt+'ft'}</div>
-      <div class="v" style="font-size:clamp(24px,4.5vw,40px)">${pt.toFixed(1)}°</div>
-      <div class="u">VS ${vs>=0?'+':''}${Math.round(vs)} fpm · ${ks.toFixed(0)} KIAS</div></div>`;
-  });
+  // sort rows by altitude ascending
+  const sorted=[...rows].sort((a,b)=>a.alt-b.alt);
+  // altitude interpolation helper
+  const interpAlt=(key)=>{
+    if(alt<=sorted[0].alt) return interpW(sorted[0][key],w,m);
+    if(alt>=sorted[sorted.length-1].alt) return interpW(sorted[sorted.length-1][key],w,m);
+    for(let i=0;i<sorted.length-1;i++){
+      if(alt>=sorted[i].alt&&alt<=sorted[i+1].alt){
+        const v0=interpW(sorted[i][key],w,m), v1=interpW(sorted[i+1][key],w,m);
+        return v0+(v1-v0)*(alt-sorted[i].alt)/(sorted[i+1].alt-sorted[i].alt);
+      }
+    }
+    return null;
+  };
+  const pt=interpAlt('pitch'), vs=interpAlt('vs'), ks=interpAlt('kias');
+  let out=`<div class="kv"><div class="l">俯仰姿态</div><div class="v">${pt.toFixed(1)}</div><div class="u">°</div></div>
+    <div class="kv blue"><div class="l">垂直速率</div><div class="v">${vs>=0?'+':''}${Math.round(vs)}</div><div class="u">fpm</div></div>
+    <div class="kv green"><div class="l">基准空速</div><div class="v">${ks.toFixed(0)}</div><div class="u">KIAS</div></div>`;
   $('#gaout').innerHTML=out;
   const G=MW(m);
   let html='<tr><th>压力高度</th><th>项</th>'+G.map(x=>`<th>${x}t</th>`).join('')+'</tr>';
@@ -373,7 +383,7 @@ function calc3(){
   });
   $('#tbl3').innerHTML=html;
 }
-['w3'].forEach(id=>{ $('#'+id).oninput=calc3; $('#'+id).onchange=calc3; });
+['w3','alt3'].forEach(id=>{ $('#'+id).oninput=calc3; $('#'+id).onchange=calc3; });
 
 /* ══════════ TAB1: full terminal table ══════════ */
 const TCFG=[[0,'收上'],[1,'收上'],[5,'收上'],[10,'收上'],[15,'收上'],[25,'收上'],[15,'放下']];
