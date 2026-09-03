@@ -112,9 +112,9 @@ if ('serviceWorker' in navigator) {
     </div>
     <div class="match" id="match0"></div>
     <div class="match" id="sum0wrap">
-      <h3>航站区域（5000ft）全构型平飞基准 · 当前重量/场高插值</h3>
+      <h3>航站区域平飞基准（机场标高+5000ft）· 当前重量/场高插值</h3>
       <div style="overflow-x:auto"><table id="tbl0s"></table></div>
-      <p class="note" style="margin:8px 0 0">按上方输入的重量/场高/OAT对QRH航站区域表插值。高亮行为与VR最接近的构型。TAS＝按当前OAT换算，供FMC/IRS地速交叉核对。</p>
+      <p class="note" style="margin:8px 0 0">按上方输入的重量/场高对QRH航站区域表插值（平飞高度＝场高+5000ft，TAS按此高度与OAT换算）。高亮行为与VR最接近的构型。</p>
     </div>
     <p class="note" style="margin-top:10px">
       · VR由起飞性能数据（机场分析表/OPT）算出后输入；本页按VR反查QRH「空速指示不可靠·航站区域（5000ft）」表中<b>速度最接近VR的襟翼构型</b>（起落架收上），输出该构型平飞的N1/空速/姿态基准，供起飞后空速失效时参照。<br>
@@ -162,11 +162,11 @@ if ('serviceWorker' in navigator) {
 <!-- ══════════ TAB 1 全表查询 ══════════ -->
 <section id="t1" hidden>
   <div class="card">
-    <h2>航站区域（5000ft）平飞 · 全构型 <span class="tag">QRH PI-QRH</span></h2>
+    <h2>航站区域平飞（机场标高+5000ft）· 全构型 <span class="tag">QRH PI-QRH</span></h2>
     <div class="grid">
       <div><label>重量 t</label><input type="number" id="w1" value="65" min="40" max="80" step="0.5"></div>
-      <div><label>机场标高 ft（人工输入）</label><input type="number" id="e1" value="5000" min="-2000" max="14500" step="100"></div>
-      <div><label>外界温度 OAT ℃（仅TAS列用）</label><input type="number" id="oat1" value="15" min="-60" max="60" step="1"></div>
+      <div><label>机场标高 ft</label><input type="number" id="e1" value="0" min="-2000" max="14500" step="100"></div>
+      <div><label>外界温度 OAT ℃</label><input type="number" id="oat1" value="15" min="-60" max="60" step="1"></div>
     </div>
     <div class="result">
       <div class="kv"><div class="l">基准 %N1</div><div class="v" id="n1r">--</div><div class="u">%</div></div>
@@ -175,9 +175,9 @@ if ('serviceWorker' in navigator) {
     </div>
     <div class="row" id="cfg1wrap" style="margin-top:8px"></div>
     <div class="match" id="sum1wrap" style="display:block">
-      <h3>全构型汇总（当前重量/标高插值）</h3>
+      <h3>全构型汇总（当前重量/机场标高插值）</h3>
       <div style="overflow-x:auto"><table id="tbl1s"></table></div>
-      <p class="note" style="margin:8px 0 0">行为当前输入重量与标高下，QRH航站区域（5000ft）表按重量线性插值、按标高线性插值后的结果。速度基准＝VREF40+增量。</p>
+      <p class="note" style="margin:8px 0 0">平飞高度＝机场标高+5000ft。N1/KIAS/俯仰为QRH表按重量、标高插值；TAS按标高+5000ft与OAT换算。</p>
     </div>
     <div style="margin-top:12px;overflow-x:auto"><table id="tbl1"></table></div>
     <p class="note">襟翼收上构型速度=VREF40+增量；「襟翼15·起落架放」=起落架放下形态。高亮列为当前重量所在区间。</p>
@@ -353,7 +353,7 @@ function calc0(){
     const n1=termI(m,e,f,GEAR0[i],w,'n1'), k=termI(m,e,f,GEAR0[i],w,'kias'), pt=termI(m,e,f,GEAR0[i],w,'pitch');
     if(n1==null) return;
     const isBest = best && f===best.f && GEAR0[i]==='收上';
-    sh+=`<tr class="${isBest?'sel':''}"><td>${LABEL0[i]}</td><td>VREF40+${inc}</td><td>${n1.toFixed(1)}</td><td>${k.toFixed(0)}</td><td>${tasFromCas(k,e,oa).toFixed(0)}</td><td>${pt.toFixed(1)}</td></tr>`;
+    sh+=`<tr class="${isBest?'sel':''}"><td>${LABEL0[i]}</td><td>VREF40+${inc}</td><td>${n1.toFixed(1)}</td><td>${k.toFixed(0)}</td><td>${tasFromCas(k,e+5000,oa).toFixed(0)}</td><td>${pt.toFixed(1)}</td></tr>`;
   });
   $('#tbl0s').innerHTML=sh;
 }
@@ -430,15 +430,14 @@ function calc1(){
   $('#pitchr').textContent=pt!=null?pt.toFixed(1):'--';
   const G=MW(m);
   const [lo,hi]=nearest2(elevsOf(m,'terminal'), e);
-  const wcol = w<=G[0]?0 : w>=G[G.length-1]?G.length-1 : G.findIndex((x,i)=>w>=x&&w<=G[i+1]);
+  const wcol = w<=G[0]?0 : w>=G[G.length-1]?G.length-1 : G.findIndex((x,i)=>w>=x&&w<=x[i+1]);
   let html='<tr><th>机场标高</th><th>构型</th><th>项</th>'+G.map(x=>`<th>${x}t</th>`).join('')+'</tr>';
   [lo,hi].forEach(ev=>{
     const c=termCfg(m,ev,f,g); if(!c) return;
     const rowsA=[['俯仰°','pitch'],['%N1','n1'],['KIAS','kias']];
     if(c.aoa) rowsA.push(['迎角°','aoa']);
-    const span=rowsA.length;
     rowsA.forEach(([lb,kk])=>{
-      html+=`<tr><td rowspan="${span}">${ev===0?'海平面':ev+'ft'}</td><td rowspan="${span}">${g==='放下'?'襟翼15·LG DN':'襟翼'+f}<br><small style="color:var(--dim)">VREF40+${c.vref_inc}</small></td><td>${lb}</td>`+
+      html+=`<tr><td>${ev===0?'海平面':ev+'ft'}</td><td>${g==='放下'?'襟翼15·LG DN':'襟翼'+f} <small style="color:var(--dim)">VREF40+${c.vref_inc}</small></td><td>${lb}</td>`+
         c[kk].map((v,i)=>`<td class="${i===wcol?'hl':''}">${v}</td>`).join('')+'</tr>';
     });
   });
@@ -450,7 +449,7 @@ function calc1(){
     const c0=termCfg(m, elevsOf(m,'terminal')[0], f, g);
     const n1=termI(m,e,f,g,w,'n1'), k=termI(m,e,f,g,w,'kias'), pt=termI(m,e,f,g,w,'pitch');
     if(n1==null||c0==null) return;
-    sh+=`<tr class="${f===curCfg[0]&&g===curCfg[1]?'sel':''}"><td>${g==='放下'?'襟翼15·LG DN':'襟翼'+f}</td><td>VREF40+${c0.vref_inc}</td><td>${pt.toFixed(1)}</td><td>${n1.toFixed(1)}</td><td class="hl">${k.toFixed(0)}</td><td>${tasFromCas(k,e,+$('#oat1').value||15).toFixed(0)}</td></tr>`;
+    sh+=`<tr class="${f===curCfg[0]&&g===curCfg[1]?'sel':''}"><td>${g==='放下'?'襟翼15·LG DN':'襟翼'+f}</td><td>VREF40+${c0.vref_inc}</td><td>${pt.toFixed(1)}</td><td>${n1.toFixed(1)}</td><td class="hl">${k.toFixed(0)}</td><td>${tasFromCas(k,e+5000,+$('#oat1').value||15).toFixed(0)}</td></tr>`;
   });
   $('#tbl1s').innerHTML=sh;
 }
