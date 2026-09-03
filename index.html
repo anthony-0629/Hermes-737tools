@@ -161,6 +161,7 @@ if ('serviceWorker' in navigator) {
     <div class="grid">
       <div><label>重量 t</label><input type="number" id="w1" value="65" min="40" max="80" step="0.5"></div>
       <div><label>机场标高 ft（人工输入）</label><input type="number" id="e1" value="5000" min="-2000" max="14500" step="100"></div>
+      <div><label>外界温度 OAT ℃（仅TAS列用）</label><input type="number" id="oat1" value="15" min="-60" max="60" step="1"></div>
     </div>
     <div class="result">
       <div class="kv"><div class="l">基准 %N1</div><div class="v" id="n1r">--</div><div class="u">%</div></div>
@@ -168,6 +169,11 @@ if ('serviceWorker' in navigator) {
       <div class="kv"><div class="l">俯仰姿态</div><div class="v" id="pitchr">--</div><div class="u">°</div></div>
     </div>
     <div class="row" id="cfg1wrap" style="margin-top:8px"></div>
+    <div class="match" id="sum1wrap" style="display:block">
+      <h3>全构型汇总（当前重量/标高插值）</h3>
+      <div style="overflow-x:auto"><table id="tbl1s"></table></div>
+      <p class="note" style="margin:8px 0 0">行为当前输入重量与标高下，QRH航站区域（5000ft）表按重量线性插值、按标高线性插值后的结果。速度基准＝VREF40+增量。</p>
+    </div>
     <div style="margin-top:12px;overflow-x:auto"><table id="tbl1"></table></div>
     <p class="note">襟翼收上构型速度=VREF40+增量；「襟翼15·起落架放」=起落架放下形态。高亮列为当前重量所在区间。</p>
   </div>
@@ -417,8 +423,18 @@ function calc1(){
     });
   });
   $('#tbl1').innerHTML=html;
+  /* all-config summary at current weight & elevation */
+  const ALL=[[0,'收上'],[1,'收上'],[5,'收上'],[10,'收上'],[15,'收上'],[25,'收上'],[15,'放下']];
+  let sh='<tr><th>构型</th><th>速度基准</th><th>俯仰°</th><th>%N1</th><th>KIAS</th><th>TAS*</th></tr>';
+  ALL.forEach(([f,g])=>{
+    const c0=termCfg(m, elevsOf(m,'terminal')[0], f, g);
+    const n1=termI(m,e,f,g,w,'n1'), k=termI(m,e,f,g,w,'kias'), pt=termI(m,e,f,g,w,'pitch');
+    if(n1==null||c0==null) return;
+    sh+=`<tr class="${f===curCfg[0]&&g===curCfg[1]?'sel':''}"><td>${g==='放下'?'襟翼15·LG DN':'襟翼'+f}</td><td>VREF40+${c0.vref_inc}</td><td>${pt.toFixed(1)}</td><td>${n1.toFixed(1)}</td><td class="hl">${k.toFixed(0)}</td><td>${tasFromCas(k,e,+$('#oat1').value||15).toFixed(0)}</td></tr>`;
+  });
+  $('#tbl1s').innerHTML=sh;
 }
-['w1','e1'].forEach(id=>{ $('#'+id).oninput=calc1; $('#'+id).onchange=calc1; });
+['w1','e1','oat1'].forEach(id=>{ $('#'+id).oninput=calc1; $('#'+id).onchange=calc1; });
 
 renderCfg1();
 
