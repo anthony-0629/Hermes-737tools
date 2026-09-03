@@ -1,4 +1,4 @@
-const CACHE = 'uas737-v1';
+const CACHE = 'uas737-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -24,6 +24,19 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  const url = new URL(e.request.url);
+  // HTML documents: network-first so updates arrive on next launch
+  if (e.request.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname === '/') {
+    e.respondWith(
+      fetch(e.request).then(res => {
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, copy));
+        return res;
+      }).catch(() => caches.match(e.request).then(h => h || caches.match('./index.html')))
+    );
+    return;
+  }
+  // assets: cache-first
   e.respondWith(
     caches.match(e.request).then(hit => {
       if (hit) return hit;
@@ -31,7 +44,7 @@ self.addEventListener('fetch', e => {
         const copy = res.clone();
         caches.open(CACHE).then(c => c.put(e.request, copy));
         return res;
-      }).catch(() => caches.match('./index.html'));
+      });
     })
   );
 });
