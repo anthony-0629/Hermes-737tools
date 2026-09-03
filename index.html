@@ -367,7 +367,7 @@ function calc3(){
   let html='<tr><th>压力高度</th><th>项</th>'+G.map(x=>`<th>${x}t</th>`).join('')+'</tr>';
   rows.forEach(r=>{
     [['俯仰°','pitch'],['垂直速率','vs'],['KIAS','kias']].forEach(([lb,k])=>{
-      html+=`<tr><td rowspan="3">${r.alt===0?'海平面':r.alt+'ft'}</td><td>${lb}</td>`+
+      html+=`<tr><td>${r.alt===0?'海平面':r.alt+'ft'}</td><td>${lb}</td>`+
         r[k].map(v=>`<td>${k==='vs'&&v>=0?'+':''}${v}</td>`).join('')+'</tr>';
     });
   });
