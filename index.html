@@ -105,19 +105,15 @@ if ('serviceWorker' in navigator) {
     </div>
     <div class="result">
       <div class="kv"><div class="l">抬轮地速 GS</div><div class="v" id="gs0">--</div><div class="u">kt</div></div>
-      <div class="kv blue kv2"><div class="l">匹配构型</div><div class="v" id="cfg0" style="font-size:clamp(24px,5vw,42px)">--</div><div class="u" id="cfg0sub"></div></div>
-      <div class="kv"><div class="l">基准 %N1</div><div class="v" id="n1_0">--</div><div class="u">%</div></div>
-      <div class="kv"><div class="l">基准空速</div><div class="v" id="kias0">--</div><div class="u">KIAS</div></div>
-      <div class="kv"><div class="l">俯仰姿态</div><div class="v" id="pitch0">--</div><div class="u">°</div></div>
+      <div class="kv blue kv2"><div class="l">真空速 TAS（无风）</div><div class="v" id="tas0">--</div><div class="u">kt</div></div>
     </div>
-    <div class="match" id="match0"></div>
     <div class="match" id="sum0wrap">
       <h3>航站区域平飞基准（机场标高平飞）· 当前重量/场高插值</h3>
       <div style="overflow-x:auto"><table id="tbl0s"></table></div>
       <p class="note" style="margin:8px 0 0">QRH「空速指示不可靠飞行/穿越颠簸气流·航站区域」表，按上方重量/机场标高插值——即该机型<b>在机场高度平飞</b>的N1/空速/姿态。TAS按机场标高与OAT换算。高亮行为与VR最接近的构型。</p>
     </div>
     <p class="note" style="margin-top:10px">
-      · VR由起飞性能数据（机场分析表/OPT）算出后输入；本页按VR反查QRH「空速指示不可靠·航站区域（5000ft）」表中<b>速度最接近VR的襟翼构型</b>（起落架收上），输出该构型平飞的N1/空速/姿态基准，供起飞后空速失效时参照。<br>
+      · VR由起飞性能数据（机场分析表/OPT）算出后输入；抬轮为起飞推力，无需查表。<br>
       · 地速GS＝VR经CAS→TAS精确换算（可压缩流）后减风分量——起飞前算好，滑跑中用FMC/IRS地速交叉核对。<br>
       · 构型匹配逻辑：起飞襟翼通常1/5/10/15，QRH表中VR≈VREF40+对应增量的速度带。
     </p>
@@ -316,34 +312,7 @@ function calc0(){
         e=+$('#e0').value, oa=+$('#oat0').value, wd=+$('#wind').value;
   const tas=tasFromCas(vr,e,oa);
   $('#gs0').textContent=(tas-wd).toFixed(1);
-  // match config: gear-up configs, kias(interp at elev, raw weight cols) closest to VR
-  const cfgs=[[0,70],[1,50],[5,30],[10,30],[15,20],[25,10]].filter(([f])=>f<=15); // takeoff-relevant
-  const results=[];
-  for(const [f,inc] of cfgs){
-    const k=termI(m,e,f,'收上',w,'kias');
-    const n1=termI(m,e,f,'收上',w,'n1');
-    const pt=termI(m,e,f,'收上',w,'pitch');
-    if(k!=null) results.push({f,inc,k,n1,pt,d:Math.abs(k-vr)});
-  }
-  results.sort((a,b)=>a.d-b.d);
-  let best=results[0];
-  // 优先襟翼5：与VR差≤10kt内优先选襟翼5（公司常用起飞襟翼）
-  const f5=results.find(r=>r.f===5);
-  if(f5 && f5.d<=10) best=f5;
-  if(best){
-    $('#cfg0').textContent='FLAP '+best.f;
-    $('#cfg0sub').textContent=`VREF40+${best.inc} · 速度带${(best.k-best.k%1).toFixed(0)}kt`;
-    $('#n1_0').textContent=best.n1.toFixed(1);
-    $('#kias0').textContent=best.k.toFixed(0);
-    $('#pitch0').textContent=best.pt.toFixed(1);
-  }
-  // candidates table
-  let html='<h3>候选构型（按与VR接近度排序）</h3><table><tr><th>构型</th><th>速度基准</th><th>%N1</th><th>KIAS</th><th>俯仰°</th><th>ΔVR</th></tr>';
-  results.forEach((r,i)=>{
-    html+=`<tr class="${i===0?'sel':''}"><td>襟翼${r.f}</td><td>VREF40+${r.inc}</td><td>${r.n1.toFixed(1)}</td><td>${r.k.toFixed(0)}</td><td>${r.pt.toFixed(1)}</td><td>${r.k-vr>=0?'+':''}${(r.k-vr).toFixed(0)}</td></tr>`;
-  });
-  html+='</table>';
-  $('#match0').innerHTML=html;
+  $('#tas0').textContent=tas.toFixed(1);
   // all-config terminal-area summary at current weight/elev/OAT
   const ALL0=[[0,70],[1,50],[5,30],[10,30],[15,20],[25,10],[15,20]];
   const LABEL0=['襟翼0','襟翼1','襟翼5','襟翼10','襟翼15','襟翼25','襟翼15·LG DN'];
@@ -352,8 +321,7 @@ function calc0(){
   ALL0.forEach(([f,inc],i)=>{
     const n1=termI(m,e,f,GEAR0[i],w,'n1'), k=termI(m,e,f,GEAR0[i],w,'kias'), pt=termI(m,e,f,GEAR0[i],w,'pitch');
     if(n1==null) return;
-    const isBest = best && f===best.f && GEAR0[i]==='收上';
-    sh+=`<tr class="${isBest?'sel':''}"><td>${LABEL0[i]}</td><td>VREF40+${inc}</td><td>${n1.toFixed(1)}</td><td>${k.toFixed(0)}</td><td>${tasFromCas(k,e,oa).toFixed(0)}</td><td>${pt.toFixed(1)}</td></tr>`;
+    sh+=`<tr><td>${LABEL0[i]}</td><td>VREF40+${inc}</td><td>${n1.toFixed(1)}</td><td>${k.toFixed(0)}</td><td>${tasFromCas(k,e,oa).toFixed(0)}</td><td>${pt.toFixed(1)}</td></tr>`;
   });
   $('#tbl0s').innerHTML=sh;
 }
