@@ -111,6 +111,11 @@ if ('serviceWorker' in navigator) {
       <div class="kv"><div class="l">俯仰姿态</div><div class="v" id="pitch0">--</div><div class="u">°</div></div>
     </div>
     <div class="match" id="match0"></div>
+    <div class="match" id="sum0wrap">
+      <h3>航站区域（5000ft）全构型平飞基准 · 当前重量/场高插值</h3>
+      <div style="overflow-x:auto"><table id="tbl0s"></table></div>
+      <p class="note" style="margin:8px 0 0">按上方输入的重量/场高/OAT对QRH航站区域表插值。高亮行为与VR最接近的构型。TAS＝按当前OAT换算，供FMC/IRS地速交叉核对。</p>
+    </div>
     <p class="note" style="margin-top:10px">
       · VR由起飞性能数据（机场分析表/OPT）算出后输入；本页按VR反查QRH「空速指示不可靠·航站区域（5000ft）」表中<b>速度最接近VR的襟翼构型</b>（起落架收上），输出该构型平飞的N1/空速/姿态基准，供起飞后空速失效时参照。<br>
       · 地速GS＝VR经CAS→TAS精确换算（可压缩流）后减风分量——起飞前算好，滑跑中用FMC/IRS地速交叉核对。<br>
@@ -336,6 +341,18 @@ function calc0(){
   });
   html+='</table>';
   $('#match0').innerHTML=html;
+  // all-config terminal-area summary at current weight/elev/OAT
+  const ALL0=[[0,70],[1,50],[5,30],[10,30],[15,20],[25,10],[15,20]];
+  const LABEL0=['襟翼0','襟翼1','襟翼5','襟翼10','襟翼15','襟翼25','襟翼15·LG DN'];
+  const GEAR0=['收上','收上','收上','收上','收上','收上','放下'];
+  let sh='<tr><th>构型</th><th>速度基准</th><th>%N1</th><th>KIAS</th><th>TAS*</th><th>俯仰°</th></tr>';
+  ALL0.forEach(([f,inc],i)=>{
+    const n1=termI(m,e,f,GEAR0[i],w,'n1'), k=termI(m,e,f,GEAR0[i],w,'kias'), pt=termI(m,e,f,GEAR0[i],w,'pitch');
+    if(n1==null) return;
+    const isBest = best && f===best.f && GEAR0[i]==='收上';
+    sh+=`<tr class="${isBest?'sel':''}"><td>${LABEL0[i]}</td><td>VREF40+${inc}</td><td>${n1.toFixed(1)}</td><td>${k.toFixed(0)}</td><td>${tasFromCas(k,e,oa).toFixed(0)}</td><td>${pt.toFixed(1)}</td></tr>`;
+  });
+  $('#tbl0s').innerHTML=sh;
 }
 ['vr','w0','e0','oat0','wind'].forEach(id=>{ $('#'+id).oninput=calc0; $('#'+id).onchange=calc0; });
 
