@@ -73,7 +73,7 @@ if (false) {
 </head>
 <body>
 <header>
-  <h1>737UAS 试用版 · 抬轮地速 / 五边基准 <span class="src">QRH R12 · PI-QRH</span><span class="ver">v1.2</span></h1>
+  <h1>737UAS 试用版 · 抬轮地速 / 五边基准 <span class="src">QRH R12 · PI-QRH</span><span class="ver">v1.4</span></h1>
   <div class="tabs">
     <div class="tab on" data-t="t0">抬轮 / 地速</div>
     <div class="tab" data-t="t2">五边进近</div>
@@ -89,7 +89,7 @@ if (false) {
   <div class="card">
     <h2>① 选择飞机 · 发动机推力类型</h2>
     <div class="row" id="modelPick"></div>
-    <p class="note" id="modelHint" style="margin:8px 0 0">👆 请先选择机型/发动机，再输入参数<br><b>⚠️ 注意事项：五边进近页面数据尚未完善</b>——该页推力/姿态基准按 ISA 15℃ 建表，温度修正功能开发中，目前仅供粗略参考。</p>
+    <p class="note" id="modelHint" style="margin:8px 0 0">👆 请先选择机型/发动机，再输入参数<br><b>⚠️ 请自行设置修正幅度与经验值</b>（自带本机记忆）；数据或功能有问题请在「反馈」页提交。</p>
   </div>
 </section>
 
@@ -143,16 +143,29 @@ if (false) {
     <div class="result" id="apprAll"></div>
 
     <h3 style="color:var(--acc);font-size:14px;margin:16px 0 8px">▼ 实际条件修正（可选）</h3>
-    <div class="grid">
-      <div><label>当前 QNH hPa</label><input type="number" id="qnh2" value="1013" min="900" max="1080" step="1"></div>
-      <div><label>当前温度 ℃</label><input type="number" id="tmp2" value="15" min="-60" max="60" step="1"></div>
-      <div><label>风增量 kt（进近速度总增量，表基准=10）</label><input type="number" id="wind2" value="10" min="-10" max="40" step="1"></div>
-    </div>
-    <p class="note" style="margin:8px 0 6px">风增量 = 进近速度在 VREF 之上的总增量（VREF+5+半顶风等按机队政策算好后填入）。<b>查表基准为 VREF+10</b>：输入 10 = 与表一致（修正0）；输入 5 = 相对基准 −5；顺风刻度 VREF+5 时输入 5 亦为 −5。修正幅度（每单位 %N1）<b>按个人经验设定</b>，本机自动保存。方向固定：温度高加/低减，QNH 高减/低加，风增量高于10加/低于10减。</p>
-    <div class="grid">
-      <div><label>每 ±10℃ → N1 ±%</label><input type="number" id="rT2" value="1" min="0" max="5" step="0.1"></div>
-      <div><label>每 ±10hPa → N1 ±%</label><input type="number" id="rQ2" value="1" min="0" max="5" step="0.1"></div>
-      <div><label>每 ±10kt 风 → N1 ±%</label><input type="number" id="rW2" value="1" min="0" max="5" step="0.1"></div>
+    <p class="note" style="margin:0 0 8px">左右一一对应：填当前条件 → 设该条件的修正幅度（每单位 %N1，按个人经验，本机自动保存）。方向固定：温度高加/低减，QNH 高减/低加，风增量高于10加/低于10减。风增量 = 进近速度在 VREF 之上的总增量，<b>查表基准 VREF+10</b>（输入10=不修正，输入5=相对基准−5）。</p>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+      <div style="background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px">
+        <label style="font-size:12px;color:var(--dim)">当前 QNH hPa</label>
+        <input type="number" id="qnh2" value="1013" min="900" max="1080" step="1" style="width:100%">
+        <div style="text-align:center;color:var(--acc);font-size:16px;margin:2px 0">↓ 每±10hPa</div>
+        <input type="number" id="rQ2" value="1" min="0" max="5" step="0.1" style="width:100%">
+        <label style="font-size:12px;color:var(--dim)">N1 ±%</label>
+      </div>
+      <div style="background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px">
+        <label style="font-size:12px;color:var(--dim)">当前温度 ℃（基准15）</label>
+        <input type="number" id="tmp2" value="15" min="-60" max="60" step="1" style="width:100%">
+        <div style="text-align:center;color:var(--acc);font-size:16px;margin:2px 0">↓ 每±10℃</div>
+        <input type="number" id="rT2" value="1" min="0" max="5" step="0.1" style="width:100%">
+        <label style="font-size:12px;color:var(--dim)">N1 ±%</label>
+      </div>
+      <div style="background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px">
+        <label style="font-size:12px;color:var(--dim)">风增量 kt（基准10）</label>
+        <input type="number" id="wind2" value="10" min="-10" max="40" step="1" style="width:100%">
+        <div style="text-align:center;color:var(--acc);font-size:16px;margin:2px 0">↓ 每±10kt</div>
+        <input type="number" id="rW2" value="1" min="0" max="5" step="0.1" style="width:100%">
+        <label style="font-size:12px;color:var(--dim)">N1 ±%</label>
+      </div>
     </div>
     <div class="result" id="corrAll"></div>
 
