@@ -107,6 +107,12 @@ if ('serviceWorker' in navigator) {
       <div class="kv"><div class="l">抬轮地速 GS</div><div class="v" id="gs0">--</div><div class="u">kt</div></div>
       <div class="kv blue kv2"><div class="l">真空速 TAS（无风）</div><div class="v" id="tas0">--</div><div class="u">kt</div></div>
     </div>
+    <div class="row" id="cfg0wrap" style="margin-top:10px"></div>
+    <div class="result">
+      <div class="kv"><div class="l">基准 %N1</div><div class="v" id="n1_0">--</div><div class="u">%</div></div>
+      <div class="kv blue"><div class="l">基准空速</div><div class="v" id="kias0">--</div><div class="u">KIAS</div></div>
+      <div class="kv green"><div class="l">俯仰姿态</div><div class="v" id="pitch0">--</div><div class="u">°</div></div>
+    </div>
     <div class="match" id="sum0wrap">
       <h3>航站区域平飞基准（机场标高平飞）· 当前重量/场高插值</h3>
       <div style="overflow-x:auto"><table id="tbl0s"></table></div>
@@ -288,7 +294,7 @@ function renderModelPick(){
       p.classList.add('on');
       $('#modelHint').style.display='none';
       $('#appBody').hidden=false;
-      calc0(); calc2(); calc3(); calc1();
+      renderCfg0(); calc0(); calc2(); calc3(); calc1();
     };
     w.appendChild(p);
   });
@@ -312,6 +318,12 @@ function calc0(){
   const tas=tasFromCas(vr,e,oa);
   $('#gs0').textContent=(tas-wd).toFixed(1);
   $('#tas0').textContent=tas.toFixed(1);
+  // selected-config level-flight cards
+  const [sf,sg]=selCfg0;
+  const n1=termI(m,e,sf,sg,w,'n1'), k=termI(m,e,sf,sg,w,'kias'), pt=termI(m,e,sf,sg,w,'pitch');
+  $('#n1_0').textContent=n1!=null?n1.toFixed(1):'--';
+  $('#kias0').textContent=k!=null?k.toFixed(0):'--';
+  $('#pitch0').textContent=pt!=null?pt.toFixed(1):'--';
   // all-config terminal-area summary at current weight/elev/OAT
   const ALL0=[[0,70],[1,50],[5,30],[10,30],[15,20],[25,10],[15,20]];
   const LABEL0=['襟翼0','襟翼1','襟翼5','襟翼10','襟翼15','襟翼25','襟翼15·LG DN'];
@@ -323,6 +335,17 @@ function calc0(){
     sh+=`<tr><td>${LABEL0[i]}</td><td>VREF40+${inc}</td><td>${n1.toFixed(1)}</td><td>${k.toFixed(0)}</td><td>${tasFromCas(k,e,oa).toFixed(0)}</td><td>${pt.toFixed(1)}</td></tr>`;
   });
   $('#tbl0s').innerHTML=sh;
+}
+let selCfg0=[0,'收上'];
+function renderCfg0(){
+  const w=$('#cfg0wrap'); w.innerHTML='';
+  TCFG.forEach(([f,g])=>{
+    const p=document.createElement('span');
+    p.className='pill'+(selCfg0[0]===f&&selCfg0[1]===g?' on':'');
+    p.textContent=g==='放下'?'襟翼15·起落架放':'襟翼'+f;
+    p.onclick=()=>{selCfg0=[f,g];renderCfg0();calc0();};
+    w.appendChild(p);
+  });
 }
 ['vr','w0','e0','oat0','wind'].forEach(id=>{ $('#'+id).oninput=calc0; $('#'+id).onchange=calc0; });
 
