@@ -20,6 +20,7 @@
 }
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
 .ver{display:inline-block;margin-left:8px;padding:1px 8px;border:1px solid var(--acc);border-radius:10px;color:var(--acc);font-size:12px;font-weight:600;vertical-align:middle;}
+.nud{width:44px;height:44px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--acc);font-size:22px;font-weight:700;cursor:pointer;flex:none;}
 body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;padding-bottom:30px;}
 header{position:sticky;top:0;z-index:10;background:linear-gradient(180deg,#101a26,#0d141d);border-bottom:1px solid var(--line);padding:10px 14px 0;}
 h1{font-size:17px;margin:0 0 8px;display:flex;justify-content:space-between;align-items:center;}
@@ -72,13 +73,14 @@ if ('serviceWorker' in navigator) {
 </head>
 <body>
 <header>
-  <h1>737 空速不可靠 · 抬轮地速 / 五边基准 <span class="src">QRH R12 · PI-QRH</span><span class="ver">v1.0</span></h1>
+  <h1>737 空速不可靠 · 抬轮地速 / 五边基准 <span class="src">QRH R12 · PI-QRH</span><span class="ver">v1.2</span></h1>
   <div class="tabs">
     <div class="tab on" data-t="t0">抬轮 / 地速</div>
     <div class="tab" data-t="t2">五边进近</div>
     <div class="tab" data-t="t3">复飞</div>
     <div class="tab" data-t="t1">全表查询</div>
     <div class="tab" data-t="t4">记忆项目</div>
+    <div class="tab" data-t="t5">反馈</div>
   </div>
 </header>
 <main>
@@ -131,15 +133,42 @@ if ('serviceWorker' in navigator) {
 <section id="t2" hidden>
   <div class="card">
     <h2>② 五边进近基准（1500ft · 起落架放下 · 下滑道3°）</h2>
+    <p class="note" style="margin:6px 0 10px">手册基准：<b>QNH 1013 hPa · ISA 15℃ · 静风</b>（不可修改）。下方三张卡为该基准下的各构型 N1。</p>
     <div class="grid">
       <div><label>重量 t</label><input type="number" id="w2" value="65" min="40" max="90" step="0.5"></div>
       <div><label>机场标高 ft</label><input type="number" id="e2" value="0" min="-2000" max="14000" step="100"></div>
-      <div><label>基准温度 ℃（手册建表值，不可改）</label><input type="number" id="oat2" value="15" readonly disabled style="opacity:.55"></div>
+      <div><label>基准 QNH（不可改）</label><input type="number" id="qnh2b" value="1013" readonly disabled style="opacity:.55"></div>
+      <div><label>基准温度 ℃（不可改）</label><input type="number" id="oat2" value="15" readonly disabled style="opacity:.55"></div>
     </div>
     <div class="result" id="apprAll"></div>
+
+    <h3 style="color:var(--acc);font-size:14px;margin:16px 0 8px">▼ 实际条件修正（可选）</h3>
+    <div class="grid">
+      <div><label>当前 QNH hPa</label><input type="number" id="qnh2" value="1013" min="900" max="1080" step="1"></div>
+      <div><label>当前温度 ℃</label><input type="number" id="tmp2" value="15" min="-60" max="60" step="1"></div>
+      <div><label>风增量 kt（进近速度总增量，表基准=10）</label><input type="number" id="wind2" value="10" min="-10" max="40" step="1"></div>
+    </div>
+    <p class="note" style="margin:8px 0 6px">风增量 = 进近速度在 VREF 之上的总增量（VREF+5+半顶风等按机队政策算好后填入）。<b>查表基准为 VREF+10</b>：输入 10 = 与表一致（修正0）；输入 5 = 相对基准 −5；顺风刻度 VREF+5 时输入 5 亦为 −5。修正幅度（每单位 %N1）<b>按个人经验设定</b>，本机自动保存。方向固定：温度高加/低减，QNH 高减/低加，风增量高于10加/低于10减。</p>
+    <div class="grid">
+      <div><label>每 ±10℃ → N1 ±%</label><input type="number" id="rT2" value="1" min="0" max="5" step="0.1"></div>
+      <div><label>每 ±10hPa → N1 ±%</label><input type="number" id="rQ2" value="1" min="0" max="5" step="0.1"></div>
+      <div><label>每 ±10kt 风 → N1 ±%</label><input type="number" id="rW2" value="1" min="0" max="5" step="0.1"></div>
+    </div>
+    <div class="result" id="corrAll"></div>
+
+    <h3 style="color:var(--acc);font-size:14px;margin:16px 0 8px">▼ 习惯经验值 <span style="color:var(--dim);font-size:12px;font-weight:400">（本机自动保存）</span></h3>
+    <div class="grid">
+      <div style="display:flex;align-items:center;gap:6px">
+        <button class="nud" onclick="nudN1(-1)">−</button>
+        <div style="flex:1"><label>经验 N1 修正 ±%</label><input type="number" id="exp2" value="0" step="0.1"></div>
+        <button class="nud" onclick="nudN1(1)">＋</button>
+      </div>
+    </div>
+    <div class="result" id="finalAll"></div>
+
     <p class="note" style="margin-top:10px">
-      ⚠️ <b>本页数据基于 ISA 15℃（手册基准温度）</b>，温度修正功能开发中——输入当前实际温度暂无法修正，故温度固定 15℃ 不可修改。非 15℃ 场次仅作粗略参考。<br>
-      三种着陆构型（襟翼15/30/40，速度=VREF+10）同时给出。空速不可靠时按计划着陆襟翼取对应列；GS为15℃下的地速近似（叠加风分量后即目标地速）。<br>
+      ⚠️ 修正值为经验近似，仅供训练参考；实际以 FCTM 稳定进近要求与加油门观察 N1 实际响应为准。<br>
+      三种着陆构型（襟翼15/30/40，速度=VREF+10）同时给出。空速不可靠时按计划着陆襟翼取对应列。<br>
       ⚠️ 大重量高标高时襟翼15速度可能超出襟翼标牌速度（QRH阴影区），此时用襟翼30/40。
     </p>
   </div>
@@ -215,6 +244,18 @@ if ('serviceWorker' in navigator) {
       · 仅限训练/预研使用，运行以有效版QRH为准。<br>
       · 添加到主屏幕后完全离线可用 <span id="offline">✓</span>
     </p>
+  </div>
+</section>
+
+<!-- ══════════ TAB 5 反馈 ══════════ -->
+<section id="t5" hidden>
+  <div class="card">
+    <h2>反馈 <span class="tag">问题 / 建议 / 勘误</span></h2>
+    <p class="note" style="margin:6px 0 10px">使用中发现数据错误、或者想要新功能？在下方直接填写提交，匿名直达开发者问卷后台。网络不佳打不开时，点「在新窗口打开」。</p>
+    <iframe src="https://v.wjx.cn/vm/trMTZeb.aspx" style="width:100%;height:70vh;border:1px solid var(--line);border-radius:10px;background:#fff" loading="lazy"></iframe>
+    <div style="margin-top:10px;text-align:center">
+      <a href="https://v.wjx.cn/vm/trMTZeb.aspx" target="_blank" rel="noopener" style="color:var(--acc2);font-size:14px;text-decoration:underline">在新窗口打开 →</a>
+    </div>
   </div>
 </section>
 
@@ -354,19 +395,48 @@ function renderCfg0(){
 /* ══════════ TAB2: approach all flaps ══════════ */
 function calc2(){
   if(!MODEL) return;
-  const m=M(), w=+$('#w2').value, e=+$('#e2').value, oa=+$('#oat2').value;
-  let html='';
+  const m=M(), w=+$('#w2').value, e=+$('#e2').value, oa=15;
+  const qnh=+$('#qnh2').value||1013, tmp=+$('#tmp2').value, wd2=+$('#wind2').value||0, exp=+$('#exp2').value||0;
+  const rT=+$('#rT2').value||0, rQ=+$('#rQ2').value||0, rW=+$('#rW2').value||0;
+  // direction fixed, magnitude user-set: temp high +, QNH high -, headwind +
+  // wind: table baseline = VREF+10 additive, so effective delta = input - 10 (input 5 => -5)
+  const corrT=(tmp-15)/10*rT, corrQ=(qnh-1013)/10*rQ*(-1), corrW=(wd2-10)/10*rW;
+  const corr=corrT+corrQ+corrW;
+  let html='', corrHtml='', finalHtml='';
   [15,30,40].forEach(f=>{
     const n1=appI(m,e,f,w,'n1'), k=appI(m,e,f,w,'kias'), pt=appI(m,e,f,w,'pitch');
     if(n1==null) return;
     const gs=tasFromCas(k,e,oa);
+    const n1c=n1+corr, n1f=n1c+exp;
     html+=`<div class="kv blue kv2"><div class="l">襟翼 ${f}（VREF${f}+10）</div>
       <div class="v" style="color:var(--acc)">${k.toFixed(0)}<span style="font-size:14px;color:var(--dim)"> kt</span></div>
-      <div class="u">N1 ${n1.toFixed(1)}% · 俯仰 ${pt.toFixed(1)}°<br>GS≈${gs.toFixed(0)} kt(无风)</div></div>`;
+      <div class="u">N1 ${n1.toFixed(1)}% · 俯仰 ${pt.toFixed(1)}°<br>GS≈${gs.toFixed(0)} kt(基准)</div></div>`;
+    corrHtml+=`<div class="kv blue kv2"><div class="l">襟翼 ${f}</div>
+      <div class="v" style="color:var(--acc2)">${n1c.toFixed(1)}<span style="font-size:14px;color:var(--dim)"> %</span></div>
+      <div class="u">修正 N1（${corr>=0?'+':''}${corr.toFixed(1)}）</div></div>`;
+    finalHtml+=`<div class="kv kv2" style="border-color:var(--acc)"><div class="l">襟翼 ${f} · 目标 N1</div>
+      <div class="v" style="color:var(--acc)">${n1f.toFixed(1)}<span style="font-size:14px;color:var(--dim)"> %</span></div>
+      <div class="u">基准+条件修正${exp?('+经验'+(exp>0?'+':'')+exp.toFixed(1)):''}</div></div>`;
   });
   $('#apprAll').innerHTML=html;
+  $('#corrAll').innerHTML=corrHtml;
+  $('#finalAll').innerHTML=finalHtml;
+  try{
+    localStorage.setItem('uas737_rT2', String(rT));
+    localStorage.setItem('uas737_rQ2', String(rQ));
+    localStorage.setItem('uas737_rW2', String(rW));
+    localStorage.setItem('uas737_exp2', String(exp));
+  }catch(x){}
 }
-['w2','e2','oat2'].forEach(id=>{ $('#'+id).oninput=calc2; $('#'+id).onchange=calc2; });
+function nudN1(d){
+  const el=$('#exp2'); el.value=((+el.value||0)+d*0.1).toFixed(1); calc2();
+}
+['w2','e2','qnh2','tmp2','wind2','exp2','rT2','rQ2','rW2'].forEach(id=>{ $('#'+id).oninput=calc2; $('#'+id).onchange=calc2; });
+try{
+  ['rT2','rQ2','rW2','exp2'].forEach(id=>{
+    const sv=localStorage.getItem('uas737_'+id); if(sv!==null) $('#'+id).value=sv;
+  });
+}catch(x){}
 
 /* ══════════ TAB3: goaround ══════════ */
 let gaSel='flap1';
