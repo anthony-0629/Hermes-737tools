@@ -79,7 +79,6 @@ if ('serviceWorker' in navigator) {
     <div class="tab" data-t="t3">复飞</div>
     <div class="tab" data-t="t1">全表查询</div>
     <div class="tab" data-t="t4">记忆项目</div>
-    <div class="tab" data-t="t5">留言板</div>
   </div>
 </header>
 <main>
@@ -219,24 +218,6 @@ if ('serviceWorker' in navigator) {
   </div>
 </section>
 
-<!-- ══════════ TAB 5 留言板 ══════════ -->
-<section id="t5" hidden>
-  <div class="card">
-    <h2>留言板 <span class="tag">反馈 / 建议 / 勘误</span></h2>
-    <p class="note" style="margin:6px 0 10px">写下使用反馈、数据勘误或功能建议。点击「复制留言」后粘贴发送给开发者（微信/飞书），也可留作自己备注。</p>
-    <div style="display:flex;flex-direction:column;gap:8px">
-      <input type="text" id="fbName" placeholder="署名（可留空）" style="background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--txt);padding:10px 12px;font-size:15px">
-      <textarea id="fbText" rows="4" placeholder="留言内容……" style="background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--txt);padding:10px 12px;font-size:15px;resize:vertical;font-family:inherit"></textarea>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <button id="fbPost" style="background:var(--acc);color:#0d141d;border:none;border-radius:8px;padding:10px 22px;font-size:15px;font-weight:600;cursor:pointer">复制留言</button>
-        <button id="fbSave" style="background:var(--panel2);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:10px 22px;font-size:15px;cursor:pointer">存到本机</button>
-        <span id="fbCount" style="color:var(--dim);font-size:13px"></span>
-      </div>
-    </div>
-    <div id="fbList" style="margin-top:14px;display:flex;flex-direction:column;gap:10px"></div>
-  </div>
-</section>
-
 </div><!-- /appBody -->
 </main>
 <script>
@@ -328,51 +309,6 @@ document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   document.querySelectorAll('main > div[id="appBody"] > section').forEach(x=>x.hidden=true);
   t.classList.add('on'); $('#'+t.dataset.t).hidden=false;
 });
-
-/* ---------- TAB5 feedback board (local) ---------- */
-const FB_KEY='uas737_feedback_v1';
-function fbLoad(){ try{ return JSON.parse(localStorage.getItem(FB_KEY))||[]; }catch(e){ return []; } }
-function fbRender(){
-  const arr=fbLoad(), list=$('#fbList'); if(!list) return;
-  $('#fbCount').textContent=arr.length?('本机共 '+arr.length+' 条'):''; 
-  list.innerHTML=arr.length?'':'<p class="note" style="margin:0">（暂无留言）</p>';
-  arr.slice().reverse().forEach((x,i)=>{
-    const div=document.createElement('div');
-    div.style.cssText='background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px 12px';
-    const d=new Date(x.t);
-    const hh=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
-    const dd=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-    div.innerHTML='<div style="display:flex;justify-content:space-between;align-items:baseline"><b style="color:var(--acc2);font-size:14px">'+(x.n||'匿名').replace(/</g,'&lt;')+'</b><span style="color:var(--dim);font-size:12px">'+dd+' '+hh+'</span></div><div style="margin-top:4px;font-size:14px;white-space:pre-wrap">'+x.c.replace(/</g,'&lt;')+'</div>';
-    list.appendChild(div);
-  });
-}
-function fbInit(){
-  const post=$('#fbPost'), save=$('#fbSave'); if(!post) return;
-  post.onclick=()=>{
-    const name=($('#fbName').value||'').trim(), txt=($('#fbText').value||'').trim();
-    if(!txt){ alert('请先写留言内容'); return; }
-    const msg='【737UAS反馈】'+(name?('来自 '+name+'：'):':')+txt;
-    if(navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(msg).then(()=>alert('已复制，去微信/飞书粘贴发送给开发者吧')).catch(()=>fbFallback(msg));
-    } else fbFallback(msg);
-  };
-  function fbFallback(msg){
-    const ta=document.createElement('textarea'); ta.value=msg; document.body.appendChild(ta);
-    ta.select();
-    try{ document.execCommand('copy'); alert('已复制，去粘贴发送给开发者'); }
-    catch(e){ prompt('长按全选复制：', msg); }
-    document.body.removeChild(ta);
-  }
-  save.onclick=()=>{
-    const name=($('#fbName').value||'').trim(), txt=($('#fbText').value||'').trim();
-    if(!txt){ alert('请先写留言内容'); return; }
-    const arr=fbLoad(); arr.push({n:name,c:txt,t:Date.now()});
-    localStorage.setItem(FB_KEY, JSON.stringify(arr));
-    $('#fbText').value=''; fbRender();
-  };
-  fbRender();
-}
-fbInit();
 
 renderModelPick();
 
