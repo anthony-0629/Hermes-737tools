@@ -148,7 +148,12 @@ if (false) {
       <div><label>当前温度 ℃</label><input type="number" id="tmp2" value="15" min="-60" max="60" step="1"></div>
       <div><label>风修正 kt（顶风+ / 顺风−）</label><input type="number" id="wind2" value="0" min="-40" max="40" step="1"></div>
     </div>
-    <p class="note" style="margin:6px 0 8px">修正规则：温度每低10℃减1% / 每高10℃加1%；QNH每高10hPa减1% / 每低10hPa加1%；顶风每10kt加1% / 顺风每10kt减1%。</p>
+    <p class="note" style="margin:8px 0 6px">修正幅度（每单位修正多少 %N1）——<b>按个人经验自行设定</b>，本机自动保存。方向固定：温度高加/低减，QNH 高减/低加，顶风加/顺风减。</p>
+    <div class="grid">
+      <div><label>每 ±10℃ → N1 ±%</label><input type="number" id="rT2" value="1" min="0" max="5" step="0.1"></div>
+      <div><label>每 ±10hPa → N1 ±%</label><input type="number" id="rQ2" value="1" min="0" max="5" step="0.1"></div>
+      <div><label>每 ±10kt 风 → N1 ±%</label><input type="number" id="rW2" value="1" min="0" max="5" step="0.1"></div>
+    </div>
     <div class="result" id="corrAll"></div>
 
     <h3 style="color:var(--acc);font-size:14px;margin:16px 0 8px">▼ 习惯经验值 <span style="color:var(--dim);font-size:12px;font-weight:400">（本机自动保存）</span></h3>
@@ -392,8 +397,9 @@ function calc2(){
   if(!MODEL) return;
   const m=M(), w=+$('#w2').value, e=+$('#e2').value, oa=15;
   const qnh=+$('#qnh2').value||1013, tmp=+$('#tmp2').value, wd2=+$('#wind2').value||0, exp=+$('#exp2').value||0;
-  // correction: temp -10C -> -1% (colder=denser, need less N1); QNH +10hPa -> -1%; headwind +10kt -> +1%
-  const corrT=(tmp-15)/10, corrQ=(qnh-1013)/10*(-1), corrW=wd2/10;
+  const rT=+$('#rT2').value||0, rQ=+$('#rQ2').value||0, rW=+$('#rW2').value||0;
+  // direction fixed, magnitude user-set: temp high +, QNH high -, headwind +
+  const corrT=(tmp-15)/10*rT, corrQ=(qnh-1013)/10*rQ*(-1), corrW=wd2/10*rW;
   const corr=corrT+corrQ+corrW;
   let html='', corrHtml='', finalHtml='';
   [15,30,40].forEach(f=>{
@@ -414,13 +420,22 @@ function calc2(){
   $('#apprAll').innerHTML=html;
   $('#corrAll').innerHTML=corrHtml;
   $('#finalAll').innerHTML=finalHtml;
-  try{ localStorage.setItem('uas737_appr_exp', String(exp)); }catch(x){}
+  try{
+    localStorage.setItem('uas737_rT2', String(rT));
+    localStorage.setItem('uas737_rQ2', String(rQ));
+    localStorage.setItem('uas737_rW2', String(rW));
+    localStorage.setItem('uas737_exp2', String(exp));
+  }catch(x){}
 }
 function nudN1(d){
   const el=$('#exp2'); el.value=((+el.value||0)+d*0.1).toFixed(1); calc2();
 }
-['w2','e2','qnh2','tmp2','wind2','exp2'].forEach(id=>{ $('#'+id).oninput=calc2; $('#'+id).onchange=calc2; });
-try{ const sv=localStorage.getItem('uas737_appr_exp'); if(sv!==null) $('#exp2').value=sv; }catch(x){}
+['w2','e2','qnh2','tmp2','wind2','exp2','rT2','rQ2','rW2'].forEach(id=>{ $('#'+id).oninput=calc2; $('#'+id).onchange=calc2; });
+try{
+  ['rT2','rQ2','rW2','exp2'].forEach(id=>{
+    const sv=localStorage.getItem('uas737_'+id); if(sv!==null) $('#'+id).value=sv;
+  });
+}catch(x){}
 
 /* ══════════ TAB3: goaround ══════════ */
 let gaSel='flap1';
