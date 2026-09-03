@@ -146,9 +146,9 @@ if (false) {
     <div class="grid">
       <div><label>当前 QNH hPa</label><input type="number" id="qnh2" value="1013" min="900" max="1080" step="1"></div>
       <div><label>当前温度 ℃</label><input type="number" id="tmp2" value="15" min="-60" max="60" step="1"></div>
-      <div><label>风修正 kt（顶风+ / 顺风−）</label><input type="number" id="wind2" value="0" min="-40" max="40" step="1"></div>
+      <div><label>风增量 kt（进近速度总增量，表基准=10）</label><input type="number" id="wind2" value="10" min="-10" max="40" step="1"></div>
     </div>
-    <p class="note" style="margin:8px 0 6px">修正幅度（每单位修正多少 %N1）——<b>按个人经验自行设定</b>，本机自动保存。方向固定：温度高加/低减，QNH 高减/低加，顶风加/顺风减。</p>
+    <p class="note" style="margin:8px 0 6px">风增量 = 进近速度在 VREF 之上的总增量（VREF+5+半顶风等按机队政策算好后填入）。<b>查表基准为 VREF+10</b>：输入 10 = 与表一致（修正0）；输入 5 = 相对基准 −5；顺风刻度 VREF+5 时输入 5 亦为 −5。修正幅度（每单位 %N1）<b>按个人经验设定</b>，本机自动保存。方向固定：温度高加/低减，QNH 高减/低加，风增量高于10加/低于10减。</p>
     <div class="grid">
       <div><label>每 ±10℃ → N1 ±%</label><input type="number" id="rT2" value="1" min="0" max="5" step="0.1"></div>
       <div><label>每 ±10hPa → N1 ±%</label><input type="number" id="rQ2" value="1" min="0" max="5" step="0.1"></div>
@@ -399,7 +399,8 @@ function calc2(){
   const qnh=+$('#qnh2').value||1013, tmp=+$('#tmp2').value, wd2=+$('#wind2').value||0, exp=+$('#exp2').value||0;
   const rT=+$('#rT2').value||0, rQ=+$('#rQ2').value||0, rW=+$('#rW2').value||0;
   // direction fixed, magnitude user-set: temp high +, QNH high -, headwind +
-  const corrT=(tmp-15)/10*rT, corrQ=(qnh-1013)/10*rQ*(-1), corrW=wd2/10*rW;
+  // wind: table baseline = VREF+10 additive, so effective delta = input - 10 (input 5 => -5)
+  const corrT=(tmp-15)/10*rT, corrQ=(qnh-1013)/10*rQ*(-1), corrW=(wd2-10)/10*rW;
   const corr=corrT+corrQ+corrW;
   let html='', corrHtml='', finalHtml='';
   [15,30,40].forEach(f=>{
