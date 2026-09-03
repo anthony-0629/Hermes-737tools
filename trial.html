@@ -358,11 +358,12 @@ function renderModelPick(){
 function M(){ return MODEL; }
 
 /* ---------- tabs ---------- */
-/* 机型选择 section 永不隐藏；切换时隐藏 appBody 内各页 + 反馈页(t5) */
+/* 机型选择 section 在所有页面显示，仅反馈页隐藏；切换时隐藏 appBody 内各页 + 反馈页(t5) */
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
   document.querySelectorAll('#appBody > section').forEach(x=>x.hidden=true);
   $('#t5').hidden=true;
+  $('#stepM').hidden=(t.dataset.t==='t5');
   t.classList.add('on'); $('#'+t.dataset.t).hidden=false;
 });
 
