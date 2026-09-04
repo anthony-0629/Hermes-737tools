@@ -111,6 +111,11 @@ if (false) {
       <span id="wxStat" class="note" style="margin:0"></span>
     </div>
     <div id="wxOut"></div>
+    <p class="note" style="margin:6px 0 0"><a href="javascript:void(0)" id="wxPasteTgl" onclick="togglePaste()" style="color:var(--acc2)">手动粘贴报文（起飞前抄ATIS/放行资料 → 解析存缓存，空中可用）</a></p>
+    <div id="wxPaste" style="display:none;margin-top:8px">
+      <textarea id="metarPaste" rows="2" placeholder="粘贴METAR报文原文，如 METAR ZBAA 040230Z 35003MPS CAVOK 28/15 Q1017 NOSIG" style="width:100%;box-sizing:border-box;font-family:monospace;font-size:14px;padding:8px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--txt);appearance:none"></textarea>
+      <button class="abtn" onclick="parsePaste()" style="margin-top:6px">解析并填入</button>
+    </div>
   </div>
 </section>
 
@@ -634,7 +639,7 @@ function fillFromWx(icao){
     })
     .then(t=>{
       const L=t.split(/\r?\n/).filter(x=>x.trim());
-      if(!L.length) throw 0;
+      if(!L.length) throw new Error('noreport');
       const raw=L[0];
       try{ localStorage.setItem('uas737_metar_'+I, JSON.stringify({raw:raw, at:Date.now()})); }catch(e){}
       out.innerHTML=renderWx(I, elev, raw, 0);
@@ -642,22 +647,47 @@ function fillFromWx(icao){
       btn.disabled=false;
       try{ calc0(); calc1(); calc2(); if(typeof calc3==='function') calc3(); }catch(e){}
     })
-    .catch(()=>{
+    .catch(err=>{
+      const noreport = err && err.message === 'noreport';   /* online but station has no report */
       /* offline fallback: last cached METAR for this station */
       let cached=null;
       try{ cached=JSON.parse(localStorage.getItem('uas737_metar_'+I)||'null'); }catch(e){}
       if(cached && cached.raw){
         out.innerHTML=renderWx(I, elev, cached.raw, cached.at);
-        stat.textContent='⚠️ 当前离线，已显示本机缓存报文';
+        stat.textContent = noreport
+          ? '⚠️ 该站在METAR源无报文，已显示本机缓存（可手动粘贴最新报文）'
+          : '⚠️ 当前离线，已显示本机缓存报文';
       } else {
-        stat.textContent = elev!=null
-          ? 'METAR获取失败（离线且无本机缓存），标高已填，温度/QNH请手动输入'
-          : 'METAR获取失败且标高表未收录，请手动输入';
+        stat.textContent = noreport
+          ? '⚠️ 该站在METAR源无报文且无缓存——可点下方「手动粘贴报文」，或手动输入温度/QNH'
+          : (elev!=null
+            ? 'METAR获取失败（离线且无本机缓存），标高已填；可点下方「手动粘贴报文」或手动输入温度/QNH'
+            : 'METAR获取失败且标高表未收录，请手动输入');
         out.innerHTML = elev!=null ? '<div class="wxgrid"><div class="wxkv"><div class="l">机场标高</div><div class="v">'+elev+' ft</div></div></div>' : '';
       }
       btn.disabled=false;
       try{ calc0(); calc1(); calc2(); if(typeof calc3==='function') calc3(); }catch(e){}
     });
+}
+function togglePaste(){ const d=$('#wxPaste'); d.style.display = d.style.display==='none' ? 'block' : 'none'; }
+function parsePaste(){
+  const txt=($('#metarPaste').value||'').trim();
+  const stat=$('#wxStat'), out=$('#wxOut');
+  if(!txt){ stat.textContent='请先粘贴报文原文'; return; }
+  const raw=txt.split(/\r?\n/)[0].trim();
+  const p=parseMetar(raw);
+  if(p.qnh==null && p.tmp==null && p.ob==null){ stat.textContent='报文解析失败：未识别到时间/温度/QNH，请检查原文'; return; }
+  /* ICAO: prefer the one in the report, else the input box */
+  let I=(raw.match(/\b([A-Z]{4})\b/)||[])[1] || $('#icao').value.toUpperCase().replace(/[^A-Z]/g,'');
+  if(!/^[A-Z]{4}$/.test(I)){ stat.textContent='无法识别机场代码：请在上方ICAO框输入后重试'; return; }
+  const elev=ELEV_MAP[I];
+  if(elev!=null){
+    ['e0','e1','e2','e3'].forEach(id=>{ const el=$('#'+id); if(el) el.value=elev; });
+  }
+  try{ localStorage.setItem('uas737_metar_'+I, JSON.stringify({raw:raw, at:Date.now()})); }catch(e){}
+  out.innerHTML=renderWx(I, elev, raw, 0);
+  stat.textContent = '✍️ 已解析手动粘贴的报文并存入本机缓存' + (elev==null ? '（标高表未收录 '+I+'，标高请手动输入）' : '');
+  try{ calc0(); calc1(); calc2(); if(typeof calc3==='function') calc3(); }catch(e){}
 }
 function fetchWx(){ fillFromWx($('#icao').value); }
 $('#icao').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); fetchWx(); } });
