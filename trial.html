@@ -104,7 +104,7 @@ if (false) {
   <div class="card">
     <h2>机场条件一键获取 <span class="tag">METAR</span></h2>
     <div class="row">
-      <input type="text" id="icao" placeholder="ICAO 四字码，如 ZBAA" autocapitalize="characters" style="max-width:220px;text-transform:uppercase">
+      <input type="text" id="icao" placeholder="ICAO 四字码，如 ZBAA" autocapitalize="characters" autocomplete="off" spellcheck="false" style="flex:0 0 260px;font-size:17px;padding:11px 14px">
       <button class="abtn" id="wxBtn" onclick="fetchWx()">获取</button>
       <span id="wxStat" class="note" style="margin:0"></span>
     </div>
@@ -627,8 +627,7 @@ function fillFromWx(icao){
     });
 }
 function fetchWx(){ fillFromWx($('#icao').value); }
-$('#icao').addEventListener('keydown', e=>{ if(e.key==='Enter') fetchWx(); });
-$('#icao').addEventListener('input', e=>{ e.target.value=e.target.value.toUpperCase(); });
+$('#icao').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); fetchWx(); } });
 
 /* init: 等待选择机型后再计算（renderModelPick 回调触发） */
 
