@@ -582,16 +582,47 @@ function parseMetar(t){
   const vv=t.match(/\s(\d{4})\s/); if(vv && +vv[1]<=9999) o.vis=vv[1]==='9999'?'>10km':vv[1]+'m';
   return o;
 }
+function renderWx(I, elev, raw, cachedAtMs){
+  const p=parseMetar(raw);
+  let html='';
+  if(elev!=null) html+='<div class="wxgrid"><div class="wxkv"><div class="l">机场标高</div><div class="v">'+elev+' ft</div></div></div>';
+  let h='';
+  if(p.qnh!=null){ const el=$('#qnh2'); if(el) el.value=p.qnh; h+='<div class="wxkv"><div class="l">QNH</div><div class="v">'+p.qnh+' hPa</div></div>'; }
+  if(p.qnh!=null && elev!=null){ const a3=$('#alt3'); if(a3) a3.value=Math.round(elev+(1013-p.qnh)*27); }
+  if(p.tmp!=null){ ['oat0','oat1','tmp2'].forEach(id=>{ const el=$('#'+id); if(el) el.value=p.tmp; }); h+='<div class="wxkv"><div class="l">温度</div><div class="v">'+p.tmp+' ℃</div></div>'; }
+  if(p.dew!=null) h+='<div class="wxkv"><div class="v" style="font-size:15px">'+p.dew+' ℃</div><div class="l">露点</div></div>';
+  let wtxt='—';
+  if(p.wd!=null&&p.ws!=null) wtxt=p.wd+'° / '+p.ws+' kt'+(p.gst?' 阵风'+p.gst:'');
+  h+='<div class="wxkv"><div class="l">风（仅参考）</div><div class="v" style="color:var(--acc2)">'+wtxt+'</div></div>';
+  h+='<div class="wxkv"><div class="l">能见度</div><div class="v" style="font-size:15px">'+(p.vis||'—')+'</div></div>';
+  html+='<div class="wxgrid">'+h+'</div>';
+  /* observation time & age alert */
+  if(p.ob){
+    const now=new Date();
+    let obDate=new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), p.ob.h, p.ob.m));
+    if(obDate.getTime()>now.getTime()+3*60000) obDate.setUTCDate(obDate.getUTCDate()-1);  /* obs from previous UTC day */
+    const ageMin=Math.round((now.getTime()-obDate.getTime())/60000);
+    const bt=new Date(obDate.getTime()+8*3600000);
+    const p2=n=>String(n).padStart(2,'0');
+    const old=ageMin>30;
+    html+='<div class="wxage'+(old?' old':'')+'">'+(old?'⚠️ ':'🕐 ')+'观测 '+p2(p.ob.h)+':'+p2(p.ob.m)+'Z（北京 '+p2(bt.getUTCHours())+':'+p2(bt.getUTCMinutes())+'）· '+ageMin+' 分钟前'+(old?' —— 超过30分钟，注意是否已有更新，建议重新获取':'')+'</div>';
+  }
+  if(cachedAtMs){
+    const ft=new Date(cachedAtMs+8*3600000), p3=n=>String(n).padStart(2,'0');
+    html+='<div class="wxage old">📦 离线缓存 · '+p3(ft.getUTCHours())+':'+p3(ft.getUTCMinutes())+'（北京）获取，联网后请重新获取最新报文</div>';
+  }
+  html+='<div class="wxraw">'+raw+'</div>';
+  html+='<p class="note" style="margin:8px 0 0">✅ 已自动填入：标高 / QNH / 温度（各页签输入框）。<b>⚠️ 风为METAR场面风，仅供参考——抬轮页「风分量」与五边页「风增量」请自行换算输入，本工具不代填。</b></p>';
+  return html;
+}
 function fillFromWx(icao){
   const I=icao.toUpperCase().replace(/[^A-Z]/g,'');
   const stat=$('#wxStat'), out=$('#wxOut'), btn=$('#wxBtn');
   if(!/^[A-Z]{4}$/.test(I)){ stat.textContent='请输入4位ICAO码'; return; }
   const elev=ELEV_MAP[I];
-  let html='';
   if(elev!=null){
     ['e0','e1','e2','e3'].forEach(id=>{ const el=$('#'+id); if(el) el.value=elev; });
     ['oat0','oat1','tmp2'].forEach(id=>{ const el=$('#'+id); if(el) el.value=''; });
-    html+='<div class="wxgrid"><div class="wxkv"><div class="l">机场标高</div><div class="v">'+elev+' ft</div></div></div>';
   } else {
     stat.textContent='标高表未收录 '+I+'，请手动输入';
   }
@@ -604,38 +635,26 @@ function fillFromWx(icao){
     .then(t=>{
       const L=t.split(/\r?\n/).filter(x=>x.trim());
       if(!L.length) throw 0;
-      const raw=L[0], p=parseMetar(raw);
-      let h='';
-      if(p.qnh!=null){ const el=$('#qnh2'); if(el) el.value=p.qnh; h+='<div class="wxkv"><div class="l">QNH</div><div class="v">'+p.qnh+' hPa</div></div>'; }
-      if(p.qnh!=null && elev!=null){ const a3=$('#alt3'); if(a3) a3.value=Math.round(elev+(1013-p.qnh)*27); }
-      if(p.tmp!=null){ ['oat0','oat1','tmp2'].forEach(id=>{ const el=$('#'+id); if(el) el.value=p.tmp; }); h+='<div class="wxkv"><div class="l">温度</div><div class="v">'+p.tmp+' ℃</div></div>'; }
-      if(p.dew!=null) h+='<div class="wxkv"><div class="v" style="font-size:15px">'+p.dew+' ℃</div><div class="l">露点</div></div>';
-      let wtxt='—';
-      if(p.wd!=null&&p.ws!=null) wtxt=p.wd+'° / '+p.ws+' kt'+(p.gst?' 阵风'+p.gst:'');
-      h+='<div class="wxkv"><div class="l">风（仅参考）</div><div class="v" style="color:var(--acc2)">'+wtxt+'</div></div>';
-      h+='<div class="wxkv"><div class="l">能见度</div><div class="v" style="font-size:15px">'+(p.vis||'—')+'</div></div>';
-      html+='<div class="wxgrid">'+h+'</div>';
-      /* observation time & age alert */
-      if(p.ob){
-        const now=new Date();
-        let obDate=new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), p.ob.h, p.ob.m));
-        if(obDate.getTime()>now.getTime()+3*60000) obDate.setUTCDate(obDate.getUTCDate()-1);  /* obs from previous UTC day */
-        const ageMin=Math.round((now.getTime()-obDate.getTime())/60000);
-        const bt=new Date(obDate.getTime()+8*3600000);
-        const p2=n=>String(n).padStart(2,'0');
-        const old=ageMin>90;
-        html+='<div class="wxage'+(old?' old':'')+'">'+(old?'⚠️ ':'🕐 ')+'观测 '+p2(p.ob.h)+':'+p2(p.ob.m)+'Z（北京 '+p2(bt.getUTCHours())+':'+p2(bt.getUTCMinutes())+'）· '+ageMin+' 分钟前'+(old?' —— 可能已有更新，建议重新获取':'')+'</div>';
-      }
-      html+='<div class="wxraw">'+raw+'</div>';
-      html+='<p class="note" style="margin:8px 0 0">✅ 已自动填入：标高 / QNH / 温度（各页签输入框）。<b>⚠️ 风为METAR场面风，仅供参考——抬轮页「风分量」与五边页「风增量」请自行换算输入，本工具不代填。</b></p>';
-      stat.textContent = elev==null ? '标高表未收录 '+I+'，标高请手动输入' : ''; out.innerHTML=html;
+      const raw=L[0];
+      try{ localStorage.setItem('uas737_metar_'+I, JSON.stringify({raw:raw, at:Date.now()})); }catch(e){}
+      out.innerHTML=renderWx(I, elev, raw, 0);
+      stat.textContent = elev==null ? '标高表未收录 '+I+'，标高请手动输入' : '';
       btn.disabled=false;
       try{ calc0(); calc1(); calc2(); if(typeof calc3==='function') calc3(); }catch(e){}
     })
     .catch(()=>{
-      if(elev!=null){ stat.textContent='METAR获取失败（离线或该站无报文），标高已填，温度/QNH请手动输入'; }
-      else { stat.textContent='METAR获取失败且标高表未收录，请手动输入'; }
-      out.innerHTML=html;
+      /* offline fallback: last cached METAR for this station */
+      let cached=null;
+      try{ cached=JSON.parse(localStorage.getItem('uas737_metar_'+I)||'null'); }catch(e){}
+      if(cached && cached.raw){
+        out.innerHTML=renderWx(I, elev, cached.raw, cached.at);
+        stat.textContent='⚠️ 当前离线，已显示本机缓存报文';
+      } else {
+        stat.textContent = elev!=null
+          ? 'METAR获取失败（离线且无本机缓存），标高已填，温度/QNH请手动输入'
+          : 'METAR获取失败且标高表未收录，请手动输入';
+        out.innerHTML = elev!=null ? '<div class="wxgrid"><div class="wxkv"><div class="l">机场标高</div><div class="v">'+elev+' ft</div></div></div>' : '';
+      }
       btn.disabled=false;
       try{ calc0(); calc1(); calc2(); if(typeof calc3==='function') calc3(); }catch(e){}
     });
