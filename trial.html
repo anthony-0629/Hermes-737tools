@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>737 空速不可靠 · 抬轮地速/五边基准</title>
+<title>试用版 737 空速不可靠 · 抬轮地速/五边基准</title>
 <style>
 :root{
   --bg:#0d141d; --panel:#16202e; --panel2:#1c2a3c; --line:#2b3d54;
@@ -62,6 +62,13 @@ tr.sel td{background:rgba(79,195,247,.10);}
 #offline{font-size:11px;color:var(--ok);}
 .match{margin-top:12px;border-top:1px dashed var(--line);padding-top:10px;}
 .match h3{font-size:13px;color:var(--acc);margin:0 0 8px;}
+.abtn{padding:9px 18px;border-radius:20px;border:1px solid var(--acc);background:var(--acc);color:#1a1206;font-size:15px;font-weight:700;cursor:pointer;}
+.abtn:disabled{opacity:.5;cursor:wait;}
+.wxgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:8px;margin-top:6px;}
+.wxkv{background:var(--panel2);border-radius:8px;padding:8px;text-align:center;}
+.wxkv .l{font-size:11px;color:var(--dim);}
+.wxkv .v{font-size:19px;font-weight:700;color:var(--acc);line-height:1.2;}
+.wxraw{font-size:12px;color:var(--dim);margin-top:8px;word-break:break-all;font-family:monospace;}
 </style>
 <script>
 if (false) {
@@ -73,7 +80,7 @@ if (false) {
 </head>
 <body>
 <header>
-  <h1>737UAS 试用版 · 抬轮地速 / 五边基准 <span class="src">QRH R12 · PI-QRH</span><span class="ver">v1.4</span></h1>
+  <h1>737 空速不可靠 · 抬轮地速 / 五边基准 <span class="src">QRH R12 · PI-QRH</span><span class="ver">v1.5</span></h1>
   <div class="tabs">
     <div class="tab on" data-t="t0">抬轮 / 地速</div>
     <div class="tab" data-t="t2">五边进近</div>
@@ -90,6 +97,18 @@ if (false) {
     <h2>① 选择飞机 · 发动机推力类型</h2>
     <div class="row" id="modelPick"></div>
     <p class="note" id="modelHint" style="margin:8px 0 0">👆 请先选择机型/发动机，再输入参数<br><b>⚠️ 请自行设置修正幅度与经验值</b>（自带本机记忆）；数据或功能有问题请在「反馈」页提交。</p>
+  </div>
+</section>
+
+<section id="wxCard" hidden>
+  <div class="card">
+    <h2>机场条件一键获取 <span class="tag">METAR</span></h2>
+    <div class="row">
+      <input type="text" id="icao" placeholder="ICAO 四字码，如 ZBAA" autocapitalize="characters" style="max-width:220px;text-transform:uppercase">
+      <button class="abtn" id="wxBtn" onclick="fetchWx()">获取</button>
+      <span id="wxStat" class="note" style="margin:0"></span>
+    </div>
+    <div id="wxOut"></div>
   </div>
 </section>
 
@@ -350,6 +369,7 @@ function renderModelPick(){
       p.classList.add('on');
       $('#modelHint').style.display='none';
       $('#appBody').hidden=false;
+      $('#wxCard').hidden=false;
       renderCfg0(); calc0(); calc2(); calc3(); calc1();
     };
     w.appendChild(p);
@@ -545,9 +565,74 @@ function calc1(){
 
 renderCfg1();
 
+/* ---------- airport wx one-key fetch (elev offline / METAR online) ---------- */
+const ELEV_MAP={"OMAA":88,"OMDB":62,"OTHH":13,"RCAY":34,"RCBS":93,"RCDC":78,"RCFG":232,"RCFN":143,"RCKH":31,"RCKU":85,"RCKW":46,"RCLY":44,"RCMQ":663,"RCMT":41,"RCNN":63,"RCPO":26,"RCQC":103,"RCQS":121,"RCSQ":97,"RCSS":18,"RCTP":106,"RCYU":52,"RJAA":141,"RJBB":26,"RJCC":82,"RJCH":151,"RJFF":32,"RJGG":15,"RJNK":36,"RJOO":50,"RJSS":15,"RJTT":35,"RKJB":35,"RKJJ":39,"RKJK":29,"RKJY":53,"RKNN":35,"RKNW":329,"RKNY":241,"RKPC":118,"RKPD":1171,"RKPK":6,"RKPS":25,"RKPU":45,"RKSG":51,"RKSI":23,"RKSM":92,"RKSO":38,"RKSS":59,"RKSW":88,"RKTH":70,"RKTI":281,"RKTN":116,"RKTU":191,"RKTY":354,"VHHH":28,"VIDP":777,"VTBD":9,"VTBS":5,"VVTS":33,"VYYY":109,"WMKK":69,"WSSS":22,"ZBAA":116,"ZBAD":98,"ZBBB":164,"ZBCF":2018,"ZBDH":46,"ZBDS":4557,"ZBDT":3442,"ZBER":3301,"ZBES":2925,"ZBHD":229,"ZBHH":3556,"ZBLA":2169,"ZBLF":1483,"ZBMZ":2231,"ZBOW":3321,"ZBSJ":233,"ZBTJ":10,"ZBTL":2395,"ZBUH":3650,"ZBYC":1242,"ZBYN":2575,"ZBYZ":3400,"ZBZJ":2347,"ZBZL":928,"ZGBH":75,"ZGBS":490,"ZGCD":128,"ZGCJ":882,"ZGCZ":1071,"ZGDY":8530,"ZGFS":6,"ZGGG":50,"ZGHA":217,"ZGHC":2221,"ZGHZ":50,"ZGKL":570,"ZGLG":340,"ZGNN":421,"ZGSD":23,"ZGSY":1444,"ZGSZ":13,"ZGWZ":357,"ZGYL":328,"ZGYY":230,"ZGZH":295,"ZHCC":495,"ZHEC":86,"ZHES":1605,"ZHHH":113,"ZHJZ":95,"ZHLY":840,"ZHSN":8365,"ZHXF":234,"ZHXY":312,"ZHYC":673,"ZJHK":75,"ZJQH":30,"ZJSY":92,"ZKHM":12,"ZKPY":117,"ZKSC":141,"ZKSD":12,"ZKWS":7,"ZLDL":9843,"ZLGL":12426,"ZLGM":9334,"ZLGY":5727,"ZLHX":2945,"ZLIC":3743,"ZLJC":4740,"ZLJQ":5112,"ZLLL":6388,"ZLLN":3707,"ZLTS":3590,"ZLXH":10510,"ZLXN":7119,"ZLXY":1572,"ZLYL":3891,"ZLYS":12816,"ZLZW":4088,"ZLZY":5280,"ZMAH":5932,"ZMAT":7260,"ZMBH":6085,"ZMBN":4311,"ZMBU":3205,"ZMCD":2457,"ZMCK":4482,"ZMDZ":4787,"ZMKD":4898,"ZMMN":4272,"ZMUB":4364,"ZMUG":5676,"ZMUL":5732,"ZPBS":5453,"ZPDL":7050,"ZPDQ":10761,"ZPJH":1815,"ZPLC":6230,"ZPLJ":7359,"ZPMS":2890,"ZPPP":6903,"ZPYM":3810,"ZSAM":59,"ZSBB":100,"ZSCG":33,"ZSCN":143,"ZSDY":15,"ZSFY":104,"ZSFZ":46,"ZSHC":23,"ZSHZ":151,"ZSJD":112,"ZSJG":171,"ZSJN":76,"ZSJU":213,"ZSLO":1225,"ZSLY":276,"ZSNJ":46,"ZSNY":49,"ZSOJ":13,"ZSPD":13,"ZSQL":185,"ZSSS":10,"ZSTN":41,"ZSTX":112,"ZSUP":3722,"ZSWF":131,"ZSWX":15,"ZSWZ":40,"ZSXZ":92,"ZSYA":1467,"ZSYC":1542,"ZSYN":63,"ZSZS":1242,"ZSZY":58,"ZUBD":11811,"ZUCK":1412,"ZUDC":1266,"ZUGY":1147,"ZUJZ":2080,"ZULP":10630,"ZULS":11713,"ZULZ":9096,"ZUMY":1472,"ZUNZ":9843,"ZUPS":2342,"ZUSH":1112,"ZUTR":1373,"ZUUU":1625,"ZUYB":3236,"ZUYZ":1460,"ZWAK":4742,"ZWAT":17,"ZWHM":513,"ZWYN":4742,"ZYCC":3718,"ZYDD":23,"ZYHB":467,"ZYHE":341,"ZYLI":811,"ZYTL":108,"ZYYA":5953};
+function parseMetar(t){
+  const o={};
+  const q=t.match(/Q(\d{3,4})\b/); if(q) o.qnh=+q[1]>=900?+q[1]:1000+ +q[1];
+  const mps=t.match(/(\d{3})(\d{2})MPS/), kt=t.match(/(\d{3})(\d{2})KT/);
+  if(mps) {o.wd=+mps[1]; o.ws=Math.round(+mps[2]*1.94384);}
+  else if(kt){o.wd=+kt[1]; o.ws=+kt[2];}
+  const g=t.match(/(\d{3})(\d{2})G(\d{2})(MPS|KT)/); if(g){o.gst=Math.round(+g[3]*(g[4]==='MPS'?1.94384:1)); if(o.wd==null){o.wd=+g[1]; o.ws=Math.round(+g[2]*(g[4]==='MPS'?1.94384:1));}}
+  const v=t.match(/(\d{3})V(\d{3})/); if(v) o.vrb=[+v[1],+v[2]];
+  const tmp=t.match(/\s(M?\d{1,2}|M\d)\/(M?\d{1,2})\s/); if(tmp){ o.tmp=(tmp[1][0]==='M'?-1:1)*+tmp[1].replace('M',''); o.dew=(tmp[2][0]==='M'?-1:1)*+tmp[2].replace('M',''); }
+  const vv=t.match(/\s(\d{4})\s/); if(vv && +vv[1]<=9999) o.vis=vv[1]==='9999'?'>10km':vv[1]+'m';
+  return o;
+}
+function fillFromWx(icao){
+  const I=icao.toUpperCase().replace(/[^A-Z]/g,'');
+  const stat=$('#wxStat'), out=$('#wxOut'), btn=$('#wxBtn');
+  if(!/^[A-Z]{4}$/.test(I)){ stat.textContent='请输入4位ICAO码'; return; }
+  const elev=ELEV_MAP[I];
+  let html='';
+  if(elev!=null){
+    ['e0','e1','e2','e3'].forEach(id=>{ const el=$('#'+id); if(el) el.value=elev; });
+    ['oat0','oat1','tmp2'].forEach(id=>{ const el=$('#'+id); if(el) el.value=''; });
+    html+='<div class="wxgrid"><div class="wxkv"><div class="l">机场标高</div><div class="v">'+elev+' ft</div></div></div>';
+  } else {
+    stat.textContent='标高表未收录 '+I+'，请手动输入';
+  }
+  btn.disabled=true; stat.textContent='获取METAR中…';
+  fetch('https://metar.vatsim.net/'+I, {cache:'no-store'})
+    .then(r=>{
+      if(!r.ok) throw 0;
+      return r.text();
+    })
+    .then(t=>{
+      const L=t.split(/\r?\n/).filter(x=>x.trim());
+      if(!L.length) throw 0;
+      const raw=L[0], p=parseMetar(raw);
+      let h='';
+      if(p.qnh!=null){ const el=$('#qnh2'); if(el) el.value=p.qnh; h+='<div class="wxkv"><div class="l">QNH</div><div class="v">'+p.qnh+' hPa</div></div>'; }
+      if(p.qnh!=null && elev!=null){ const a3=$('#alt3'); if(a3) a3.value=Math.round(elev+(1013-p.qnh)*27); }
+      if(p.tmp!=null){ ['oat0','oat1','tmp2'].forEach(id=>{ const el=$('#'+id); if(el) el.value=p.tmp; }); h+='<div class="wxkv"><div class="l">温度</div><div class="v">'+p.tmp+' ℃</div></div>'; }
+      if(p.dew!=null) h+='<div class="wxkv"><div class="v" style="font-size:15px">'+p.dew+' ℃</div><div class="l">露点</div></div>';
+      let wtxt='—';
+      if(p.wd!=null&&p.ws!=null) wtxt=p.wd+'° / '+p.ws+' kt'+(p.gst?' 阵风'+p.gst:'');
+      h+='<div class="wxkv"><div class="l">风（仅参考）</div><div class="v" style="color:var(--acc2)">'+wtxt+'</div></div>';
+      h+='<div class="wxkv"><div class="l">能见度</div><div class="v" style="font-size:15px">'+(p.vis||'—')+'</div></div>';
+      html+='<div class="wxgrid">'+h+'</div>';
+      html+='<div class="wxraw">'+raw+'</div>';
+      html+='<p class="note" style="margin:8px 0 0">✅ 已自动填入：标高 / QNH / 温度（各页签输入框）。<b>⚠️ 风为METAR场面风，仅供参考——抬轮页「风分量」与五边页「风增量」请自行换算输入，本工具不代填。</b></p>';
+      stat.textContent = elev==null ? '标高表未收录 '+I+'，标高请手动输入' : ''; out.innerHTML=html;
+      btn.disabled=false;
+      try{ calc0(); calc1(); calc2(); if(typeof calc3==='function') calc3(); }catch(e){}
+    })
+    .catch(()=>{
+      if(elev!=null){ stat.textContent='METAR获取失败（离线或该站无报文），标高已填，温度/QNH请手动输入'; }
+      else { stat.textContent='METAR获取失败且标高表未收录，请手动输入'; }
+      out.innerHTML=html;
+      btn.disabled=false;
+      try{ calc0(); calc1(); calc2(); if(typeof calc3==='function') calc3(); }catch(e){}
+    });
+}
+function fetchWx(){ fillFromWx($('#icao').value); }
+$('#icao').addEventListener('keydown', e=>{ if(e.key==='Enter') fetchWx(); });
+$('#icao').addEventListener('input', e=>{ e.target.value=e.target.value.toUpperCase(); });
+
 /* init: 等待选择机型后再计算（renderModelPick 回调触发） */
 
-if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+if(false) {
   navigator.serviceWorker.register('sw.js').then(()=>{$('#offline').textContent='✓ 已缓存';}).catch(()=>{});
 }
 </script>
