@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>试用版 737 空速不可靠 · 抬轮地速/五边基准</title>
+<title>试用版 v1.6 · 737 空速不可靠 · 抬轮地速/五边基准</title>
 <style>
 :root{
   --bg:#0d141d; --panel:#16202e; --panel2:#1c2a3c; --line:#2b3d54;
@@ -82,7 +82,7 @@ if (false) {
 </head>
 <body>
 <header>
-  <h1>737 空速不可靠 · 抬轮地速 / 五边基准 <span class="src">QRH R12 · PI-QRH</span><span class="ver">v1.5</span></h1>
+  <h1>737 空速不可靠 · 抬轮地速 / 五边基准 <span class="src">QRH R12 · PI-QRH</span><span class="ver">v1.6</span></h1>
   <div class="tabs">
     <div class="tab on" data-t="t0">抬轮 / 地速</div>
     <div class="tab" data-t="t2">五边进近</div>
@@ -438,7 +438,7 @@ function renderCfg0(){
 /* ══════════ TAB2: approach all flaps ══════════ */
 function calc2(){
   if(!MODEL) return;
-  const m=M(), w=+$('#w2').value, e=+$('#e2').value, oa=15;
+  const m=M(), w=+$('#w2').value, e=+$('#e2').value;
   const qnh=+$('#qnh2').value||1013, tmp=+$('#tmp2').value, wd2=+$('#wind2').value||0, exp=+$('#exp2').value||0;
   const rT=+$('#rT2').value||0, rQ=+$('#rQ2').value||0, rW=+$('#rW2').value||0;
   // direction fixed, magnitude user-set: temp high +, QNH high -, headwind +
@@ -449,7 +449,7 @@ function calc2(){
   [15,30,40].forEach(f=>{
     const n1=appI(m,e,f,w,'n1'), k=appI(m,e,f,w,'kias'), pt=appI(m,e,f,w,'pitch');
     if(n1==null) return;
-    const gs=tasFromCas(k,e,oa);
+    const gs=tasFromCas(k,e,tmp);
     const n1c=n1+corr, n1f=n1c+exp;
     html+=`<div class="kv blue kv2"><div class="l">襟翼 ${f}（VREF${f}+10）</div>
       <div class="v" style="color:var(--acc)">${k.toFixed(0)}<span style="font-size:14px;color:var(--dim)"> kt</span></div>
