@@ -71,6 +71,16 @@ tr.sel td{background:rgba(79,195,247,.10);}
 .wxraw{font-size:12px;color:var(--dim);margin-top:8px;word-break:break-all;font-family:monospace;}
 .wxage{font-size:12px;color:var(--dim);margin-top:8px;}
 .wxage.old{color:#ff8a80;font-weight:700;}
+
+/* TAB6 高距比 layout */
+#t6 .big6{grid-column:1/-1;background:var(--panel2);border:2px solid var(--acc);border-radius:14px;padding:16px 10px;text-align:center;}
+#t6 .big6 .lab{font-size:13px;color:var(--dim);letter-spacing:2px;}
+#t6 .big6 .num{font-size:56px;font-weight:800;color:var(--acc);line-height:1.1;font-variant-numeric:tabular-nums;}
+#t6 .big6 .num.neg{color:#e06c5f;}
+#t6 .big6 .unit{font-size:16px;color:var(--dim);font-weight:400;}
+#t6 .bd6{grid-column:1/-1;margin-top:2px;border:1px dashed var(--line);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--dim);line-height:2;}
+#t6 .hint6{grid-column:1/-1;text-align:center;font-size:14px;color:var(--dim);background:var(--panel2);border-radius:10px;padding:10px;}
+#t6 .hint6 b{color:var(--acc);}
 </style>
 <script>
 if ('serviceWorker' in navigator) {
@@ -79,14 +89,16 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+
 </head>
 <body>
 <header>
-  <h1>737 空速不可靠 · 抬轮地速 / 五边基准 <span class="src">QRH R12 · PI-QRH</span><span class="ver">v1.6</span></h1>
+  <h1>737 空速不可靠 · 抬轮地速 / 五边基准 <span class="src">QRH R12 · PI-QRH</span><span class="ver">v1.7</span></h1>
   <div class="tabs">
     <div class="tab on" data-t="t0">抬轮 / 地速</div>
     <div class="tab" data-t="t2">五边进近</div>
     <div class="tab" data-t="t3">复飞</div>
+    <div class="tab" data-t="t6">高距比</div>
     <div class="tab" data-t="t1">全表查询</div>
     <div class="tab" data-t="t4">记忆项目</div>
     <div class="tab" data-t="t5">反馈</div>
@@ -232,6 +244,23 @@ if ('serviceWorker' in navigator) {
 </section>
 
 <!-- ══════════ TAB 1 全表查询 ══════════ -->
+<section id="t6" hidden>
+  <div class="card">
+    <h2>高距比 · 口算修正值</h2>
+    <p class="note" style="margin:6px 0 10px">口算方法：<b>当前高度m ÷ 100 ＋ 下方修正值</b>，与 CDU/进程页距跑道 NM 对比：<b>数值大 = 偏高，小 = 偏低</b>。<br>修正值 = 进近类型 + 速度 − 标高(ft转m)÷100 ＋ 风（自行增减，1NM为单位）。</p>
+    <div class="grid">
+      <div><label>机场标高 ft（METAR一键获取自动填入）</label><input type="number" id="elevft6" placeholder="如 100" step="1"></div>
+    </div>
+    <h3 style="color:var(--acc);font-size:14px;margin:14px 0 6px">① 进近类型</h3>
+    <div class="row" id="appTypePick"></div>
+    <h3 style="color:var(--acc);font-size:14px;margin:14px 0 6px">② 当前速度</h3>
+    <div class="row" id="spdPick"></div>
+    <h3 style="color:var(--acc);font-size:14px;margin:14px 0 6px">③ 风 NM（自行增减，无上限下限）</h3>
+    <div class="row" id="windPick" style="align-items:center"></div>
+    <div class="result" id="res6"></div>
+  </div>
+</section>
+
 <section id="t1" hidden>
   <div class="card">
     <h2>航站区域平飞（机场标高）· 全构型 <span class="tag">QRH 空速不可靠/穿越颠簸</span></h2>
@@ -626,7 +655,7 @@ function fillFromWx(icao){
   if(!/^[A-Z]{4}$/.test(I)){ stat.textContent='请输入4位ICAO码'; return; }
   const elev=ELEV_MAP[I];
   if(elev!=null){
-    ['e0','e1','e2','e3'].forEach(id=>{ const el=$('#'+id); if(el) el.value=elev; });
+    ['e0','e1','e2','e3','elevft6'].forEach(id=>{ const el=$('#'+id); if(el) el.value=elev; });
     ['oat0','oat1','tmp2'].forEach(id=>{ const el=$('#'+id); if(el) el.value=''; });
   } else {
     stat.textContent='标高表未收录 '+I+'，请手动输入';
@@ -682,7 +711,7 @@ function parsePaste(){
   if(!/^[A-Z]{4}$/.test(I)){ stat.textContent='无法识别机场代码：请在上方ICAO框输入后重试'; return; }
   const elev=ELEV_MAP[I];
   if(elev!=null){
-    ['e0','e1','e2','e3'].forEach(id=>{ const el=$('#'+id); if(el) el.value=elev; });
+    ['e0','e1','e2','e3','elevft6'].forEach(id=>{ const el=$('#'+id); if(el) el.value=elev; });
   }
   try{ localStorage.setItem('uas737_metar_'+I, JSON.stringify({raw:raw, at:Date.now()})); }catch(e){}
   out.innerHTML=renderWx(I, elev, raw, 0);
@@ -697,6 +726,58 @@ $('#icao').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefaul
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js').then(()=>{$('#offline').textContent='✓ 已缓存';}).catch(()=>{});
 }
+
+
+
+/* ══════════ TAB6: 高距比口算修正值 ══════════ */
+const APP_TYPES=[
+  {id:'prog',  name:'按程序进近', d:0,  hint:'连续下降，无额外修正'},
+  {id:'u',     name:'U型 (−15NM)', d:-15, hint:'大拐弯回切，距离修正−15NM'},
+  {id:'t',     name:'T型 (−8NM)',  d:-8,  hint:'侧方切入，距离修正−8NM'},
+  {id:'i',     name:'I型 (0NM)',   d:0,  hint:'直接进近，不修正'}
+];
+const SPD_TIERS=[
+  {id:'s300', name:'300kt (+15NM)', d:15},
+  {id:'s250', name:'250kt (+10NM)', d:10},
+  {id:'s210', name:'210kt (+5NM)',  d:5},
+  {id:'s170', name:'170kt (0NM)',   d:0}
+];
+let appSel=null, spdSel=null, windNm=0;
+function renderPick6(){
+  const mk=(host,list,sel,set)=>{ host.innerHTML=''; list.forEach(t=>{
+    const p=document.createElement('div'); p.className='pill'+(sel===t.id?' on':'');
+    p.innerHTML=t.name+(t.hint?'<div style="font-size:10px;color:var(--dim);margin-top:2px">'+t.hint+'</div>':'');
+    p.onclick=()=>{set(t.id);renderPick6();calc6();}; host.appendChild(p); }); };
+  mk($('#appTypePick'),APP_TYPES,appSel,v=>appSel=v);
+  mk($('#spdPick'),SPD_TIERS,spdSel,v=>spdSel=v);
+  // wind stepper
+  const w=$('#windPick'); w.innerHTML='';
+  const mkBtn=(txt,fn)=>{ const b=document.createElement('div'); b.className='pill'; b.textContent=txt; b.onclick=fn; w.appendChild(b); };
+  mkBtn('−1', ()=>{ windNm=windNm-1; renderPick6(); calc6(); });
+  const cur=document.createElement('div');
+  cur.className='pill'+(windNm!==0?' on':'');
+  cur.innerHTML='<b style="font-size:18px">'+(windNm>0?'+':'')+windNm+'</b><div style="font-size:10px;color:var(--dim);margin-top:2px">NM</div>';
+  w.appendChild(cur);
+  mkBtn('＋1', ()=>{ windNm=windNm+1; renderPick6(); calc6(); });
+}
+function calc6(){
+  const elevFt=+$('#elevft6').value;
+  let h='';
+  if(appSel===null||spdSel===null){
+    h='<div class="rc warn">请先选择 ①进近类型 和 ②当前速度</div>';
+    $('#res6').innerHTML=h; return;
+  }
+  const app=APP_TYPES.find(t=>t.id===appSel), spd=SPD_TIERS.find(t=>t.id===spdSel);
+  const elevM=(isFinite(elevFt)?elevFt:0)*0.3048;
+  const elevNm=elevM/100;
+  const corr=Math.round(app.d+spd.d+windNm-elevNm);
+  h+=`<div class="big6"><div class="lab">修正值</div><div class="num${corr<0?' neg':''}">${corr>=0?'+':''}${corr}</div><div class="unit">NM</div></div>`;
+  h+=`<div class="bd6">明细：${app.name.split(' ')[0]} ${app.d>=0?'+':'−'}${Math.abs(app.d)} ｜ ${spd.name.split(' ')[0]} ${spd.d>=0?'+':'−'}${Math.abs(spd.d)} ｜ 风 ${windNm>0?'+':''}${windNm} ｜ −标高 ${elevNm.toFixed(2)}（${elevFt||0}ft）</div>`;
+  h+=`<div class="hint6">PFD高度m ÷ 100 <b>${corr>=0?'+':'−'} ${Math.abs(corr)}</b> ↔ CDU距跑道 NM ｜ 左大 = 偏高 · 左小 = 偏低</div>`;
+  $('#res6').innerHTML=h;
+}
+['elevft6'].forEach(id=>{ $('#'+id).oninput=calc6; $('#'+id).onchange=calc6; });
+renderPick6();
 </script>
 </body>
 </html>
