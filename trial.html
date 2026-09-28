@@ -83,7 +83,7 @@ if (false) {
 </head>
 <body>
 <header>
-  <h1>737 空速不可靠 · 抬轮地速 / 五边基准 <span class="src">QRH R12 · PI-QRH</span><span class="ver">v1.7t4</span></h1>
+  <h1>737 空速不可靠 · 抬轮地速 / 五边基准 <span class="src">QRH R12 · PI-QRH</span><span class="ver">v1.7t5</span></h1>
   <div class="tabs">
     <div class="tab on" data-t="t0">抬轮 / 地速</div>
     <div class="tab" data-t="t2">五边进近</div>
@@ -236,19 +236,17 @@ if (false) {
 <!-- ══════════ TAB 1 全表查询 ══════════ -->
 <section id="t6" hidden>
   <div class="card">
-    <h2>高距比 · 差值速算（米制）</h2>
-    <p class="note" style="margin:6px 0 10px">公式：<b>等效距离 = 高度m÷100 + 程序修正 − 标高(ft转米)÷100</b>（+ 自选风修正），与 CDU/进程页距跑道 NM 直接对比：<b>数值大 = 偏高，数值小 = 偏低</b>。风默认不计入，由飞行员自行选择是否调整。</p>
+    <h2>高距比 · 口算修正值</h2>
+    <p class="note" style="margin:6px 0 10px">口算方法：<b>当前高度m ÷ 100 ＋ 下方修正值</b>，与 CDU/进程页距跑道 NM 对比：<b>数值大 = 偏高，小 = 偏低</b>。<br>修正值 = 进近类型 + 速度 − 标高(ft转m)÷100 ＋ 风修正（自行增减，1NM为单位）。</p>
     <div class="grid">
-      <div><label>距跑道距离 NM（CDU/进程页）</label><input type="number" id="dist6" placeholder="如 40" step="0.5" min="0"></div>
-      <div><label>机场标高 ft（自动转米）</label><input type="number" id="elevft6" placeholder="如 100" step="1"></div>
-      <div><label>当前高度 m（PFD）</label><input type="number" id="alt6" placeholder="如 4200" step="10"></div>
+      <div><label>机场标高 ft（METAR一键获取自动填入）</label><input type="number" id="elevft6" placeholder="如 100" step="1"></div>
     </div>
     <h3 style="color:var(--acc);font-size:14px;margin:14px 0 6px">① 进近类型</h3>
     <div class="row" id="appTypePick"></div>
     <h3 style="color:var(--acc);font-size:14px;margin:14px 0 6px">② 当前速度</h3>
     <div class="row" id="spdPick"></div>
-    <h3 style="color:var(--acc);font-size:14px;margin:14px 0 6px">③ 风修正（默认不计入，自行选择）</h3>
-    <div class="row" id="windPick"></div>
+    <h3 style="color:var(--acc);font-size:14px;margin:14px 0 6px">③ 风修正 NM（自行增减）</h3>
+    <div class="row" id="windPick" style="align-items:center"></div>
     <div class="result" id="res6"></div>
   </div>
 </section>
@@ -647,7 +645,7 @@ function fillFromWx(icao){
   if(!/^[A-Z]{4}$/.test(I)){ stat.textContent='请输入4位ICAO码'; return; }
   const elev=ELEV_MAP[I];
   if(elev!=null){
-    ['e0','e1','e2','e3'].forEach(id=>{ const el=$('#'+id); if(el) el.value=elev; });
+    ['e0','e1','e2','e3','elevft6'].forEach(id=>{ const el=$('#'+id); if(el) el.value=elev; });
     ['oat0','oat1','tmp2'].forEach(id=>{ const el=$('#'+id); if(el) el.value=''; });
   } else {
     stat.textContent='标高表未收录 '+I+'，请手动输入';
@@ -703,7 +701,7 @@ function parsePaste(){
   if(!/^[A-Z]{4}$/.test(I)){ stat.textContent='无法识别机场代码：请在上方ICAO框输入后重试'; return; }
   const elev=ELEV_MAP[I];
   if(elev!=null){
-    ['e0','e1','e2','e3'].forEach(id=>{ const el=$('#'+id); if(el) el.value=elev; });
+    ['e0','e1','e2','e3','elevft6'].forEach(id=>{ const el=$('#'+id); if(el) el.value=elev; });
   }
   try{ localStorage.setItem('uas737_metar_'+I, JSON.stringify({raw:raw, at:Date.now()})); }catch(e){}
   out.innerHTML=renderWx(I, elev, raw, 0);
@@ -721,7 +719,7 @@ if('serviceWorker' in navigator && location.protocol.startsWith('http')){
 
 
 
-/* ══════════ TAB6: 高距比差值速算（进近型+速度档+风 按钮） ══════════ */
+/* ══════════ TAB6: 高距比口算修正值 ══════════ */
 const APP_TYPES=[
   {id:'prog',  name:'按程序进近', d:0,  hint:'连续下降，无额外修正'},
   {id:'u',     name:'U型 (−15NM)', d:-15, hint:'大拐弯回切，距离修正−15NM'},
@@ -734,14 +732,7 @@ const SPD_TIERS=[
   {id:'s210', name:'210kt (+5NM)',  d:5},
   {id:'s170', name:'170kt (0NM)',   d:0}
 ];
-const WIND_OPTS=[
-  {id:'w0',  name:'不计风',    d:0,   hint:'默认'},
-  {id:'wh10',name:'顶风10kt',  d:-1,  hint:'检查距离−1NM'},
-  {id:'wh20',name:'顶风20kt',  d:-2,  hint:'检查距离−2NM'},
-  {id:'wt10',name:'顺风10kt',  d:+1,  hint:'检查距离+1NM'},
-  {id:'wt20',name:'顺风20kt',  d:+2,  hint:'检查距离+2NM'}
-];
-let appSel=null, spdSel=null, windSel='w0';
+let appSel=null, spdSel=null, windNm=0;
 function renderPick6(){
   const mk=(host,list,sel,set)=>{ host.innerHTML=''; list.forEach(t=>{
     const p=document.createElement('div'); p.className='pill'+(sel===t.id?' on':'');
@@ -749,43 +740,35 @@ function renderPick6(){
     p.onclick=()=>{set(t.id);renderPick6();calc6();}; host.appendChild(p); }); };
   mk($('#appTypePick'),APP_TYPES,appSel,v=>appSel=v);
   mk($('#spdPick'),SPD_TIERS,spdSel,v=>spdSel=v);
-  mk($('#windPick'),WIND_OPTS,windSel,v=>windSel=v);
+  // wind stepper
+  const w=$('#windPick'); w.innerHTML='';
+  const mkBtn=(txt,fn)=>{ const b=document.createElement('div'); b.className='pill'; b.textContent=txt; b.onclick=fn; w.appendChild(b); };
+  mkBtn('−1', ()=>{ windNm=Math.max(windNm-1,-5); renderPick6(); calc6(); });
+  const cur=document.createElement('div');
+  cur.className='pill'+(windNm!==0?' on':'');
+  cur.innerHTML='<b style="font-size:18px">'+(windNm>0?'+':'')+windNm+'</b><div style="font-size:10px;color:var(--dim);margin-top:2px">NM</div>';
+  w.appendChild(cur);
+  mkBtn('＋1', ()=>{ windNm=Math.min(windNm+1,5); renderPick6(); calc6(); });
 }
 function calc6(){
-  const alt=+$('#alt6').value, elevFt=+$('#elevft6').value, dist=+$('#dist6').value;
+  const elevFt=+$('#elevft6').value;
   let h='';
   if(appSel===null||spdSel===null){
     h='<div class="rc warn">请先选择 ①进近类型 和 ②当前速度</div>';
     $('#res6').innerHTML=h; return;
   }
-  if(!isFinite(alt)||alt<=0){
-    h='<div class="rc warn">请输入当前高度 m（PFD）</div>';
-    $('#res6').innerHTML=h; return;
-  }
-  const app=APP_TYPES.find(t=>t.id===appSel), spd=SPD_TIERS.find(t=>t.id===spdSel),
-        wnd=WIND_OPTS.find(t=>t.id===windSel);
+  const app=APP_TYPES.find(t=>t.id===appSel), spd=SPD_TIERS.find(t=>t.id===spdSel);
   const elevM=(isFinite(elevFt)?elevFt:0)*0.3048;
-  const altNm=alt/100;                          // 高度m÷100
-  const elevNm=elevM/100;                       // 标高m÷100（减项）
-  const corr=app.d+spd.d;                       // 程序修正（进近型+速度）
-  const wndNm=wnd.d;                            // 风修正（自选）
-  const equiv=altNm+corr-elevNm+wndNm;          // 等效距离 NM
-  const col = !isFinite(dist)?'':(Math.abs(equiv-dist)<=1?'ok':(equiv>dist?'warn':'bad'));
-  h+=`<div class="rc"><div class="rk">高度 ÷100</div><div class="rv">${alt} ÷ 100 = <b>${altNm.toFixed(1)}</b></div></div>`;
-  h+=`<div class="rc"><div class="rk">程序修正</div><div class="rv">${app.name.split(' ')[0]} ${spd.name.split(' ')[0]} → ${corr>=0?'+':''}${corr}</div></div>`;
-  h+=`<div class="rc"><div class="rk">− 标高 ÷100</div><div class="rv">− ${elevNm.toFixed(1)}（${elevFt||0}ft = ${elevM.toFixed(0)}m）</div></div>`;
-  if(wndNm!==0) h+=`<div class="rc"><div class="rk">＋ 风修正</div><div class="rv">${wnd.name} → ${wndNm>0?'+':''}${wndNm}</div></div>`;
-  h+=`<div class="rc ok"><div class="rk">等效距离</div><div class="rv">${equiv.toFixed(1)} NM</div></div>`;
-  if(isFinite(dist)&&dist>0){
-    const diff=equiv-dist;
-    const verdict=Math.abs(diff)<=1?'剖面正常（±1NM内）':(diff>0?`偏高 ≈ ${(diff*101.6).toFixed(0)} m`:`偏低 ≈ ${(-diff*101.6).toFixed(0)} m`);
-    h+=`<div class="rc ${col}"><div class="rk">对比 距跑道 ${dist} NM</div><div class="rv">${diff>0?'+':''}${diff.toFixed(1)} NM · ${verdict}</div></div>`;
-  } else {
-    h+='<div class="rc"><div class="rk">对比</div><div class="rv">填入距跑道NM后显示偏差</div></div>';
-  }
+  const elevNm=elevM/100;
+  const corr=app.d+spd.d+windNm-elevNm;
+  h+=`<div class="rc"><div class="rk">程序修正</div><div class="rv">${app.name.split(' ')[0]} ${spd.name.split(' ')[0]} → ${app.d+spd.d>=0?'+':''}${app.d+spd.d}</div></div>`;
+  h+=`<div class="rc"><div class="rk">− 标高 ÷100</div><div class="rv">− ${elevNm.toFixed(2)}（${elevFt||0}ft = ${elevM.toFixed(0)}m）</div></div>`;
+  if(windNm!==0) h+=`<div class="rc"><div class="rk">＋ 风修正</div><div class="rv">${windNm>0?'+':''}${windNm} NM</div></div>`;
+  h+=`<div class="rc ok"><div class="rk">口算修正值</div><div class="rv"><b style="font-size:22px">${corr>=0?'+':''}${corr.toFixed(1)}</b> NM</div></div>`;
+  h+=`<div class="rc"><div class="rk">口算方法</div><div class="rv" style="font-size:14px">当前高度m ÷ 100 ${corr>=0?'+':'−'} ${Math.abs(corr).toFixed(1)} ↔ 距跑道 NM<br>左大 = 偏高 · 左小 = 偏低</div></div>`;
   $('#res6').innerHTML=h;
 }
-['dist6','elevft6','alt6'].forEach(id=>{ $('#'+id).oninput=calc6; $('#'+id).onchange=calc6; });
+['elevft6'].forEach(id=>{ $('#'+id).oninput=calc6; $('#'+id).onchange=calc6; });
 renderPick6();
 </script>
 </body>
