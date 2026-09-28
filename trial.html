@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>试用版 v1.6 · 737 空速不可靠 · 抬轮地速/五边基准</title>
+<title>737UAS 试用版 · 737 空速不可靠 · 抬轮地速/五边基准</title>
 <style>
 :root{
   --bg:#0d141d; --panel:#16202e; --panel2:#1c2a3c; --line:#2b3d54;
@@ -79,14 +79,16 @@ if (false) {
   });
 }
 </script>
+
 </head>
 <body>
 <header>
-  <h1>737 空速不可靠 · 抬轮地速 / 五边基准 <span class="src">QRH R12 · PI-QRH</span><span class="ver">v1.6</span></h1>
+  <h1>737 空速不可靠 · 抬轮地速 / 五边基准 <span class="src">QRH R12 · PI-QRH</span><span class="ver">v1.7t</span></h1>
   <div class="tabs">
     <div class="tab on" data-t="t0">抬轮 / 地速</div>
     <div class="tab" data-t="t2">五边进近</div>
     <div class="tab" data-t="t3">复飞</div>
+    <div class="tab" data-t="t6">高距比</div>
     <div class="tab" data-t="t1">全表查询</div>
     <div class="tab" data-t="t4">记忆项目</div>
     <div class="tab" data-t="t5">反馈</div>
@@ -232,6 +234,32 @@ if (false) {
 </section>
 
 <!-- ══════════ TAB 1 全表查询 ══════════ -->
+<section id="t6" hidden>
+  <div class="card">
+    <h2>高距比检查（下降剖面 · 米制高度）</h2>
+    <p class="note" style="margin:6px 0 10px">原理：需要距离 = 高度差折算距离（3:1 ≈ 每100m配1NM）＋ 当前速度→目标速度的减速距离。与实际距跑道距离比较得出偏高/偏低。<br>3:1为无风值（FCTM 4.15：无风经济速度下降1000ft≈3NM）；风修正请自行用系数调整。</p>
+    <div class="grid">
+      <div><label>当前高度 m</label><input type="number" id="alt6" placeholder="如 3000" step="10"></div>
+      <div><label>机场标高 m</label><input type="number" id="elev6" value="0" step="1"></div>
+      <div><label>距跑道距离 NM</label><input type="number" id="dist6" placeholder="如 25" step="0.5" min="0"></div>
+      <div><label>当前速度 kt</label><input type="number" id="spd6" placeholder="如 280" step="1" min="100"></div>
+      <div><label>目标速度 kt</label><input type="number" id="tgt6" value="180" min="100" max="250" step="1"></div>
+    </div>
+    <h3 style="color:var(--acc);font-size:14px;margin:16px 0 8px">▼ 模型系数（个人经验值，本机自动保存）</h3>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">
+      <div style="background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px">
+        <label style="font-size:12px;color:var(--dim)">每 100m 高度差所需 NM（3:1=1.0）</label>
+        <input type="number" id="ratio6" value="1" min="0.5" max="2" step="0.05" style="width:100%">
+      </div>
+      <div style="background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px">
+        <label style="font-size:12px;color:var(--dim)">每减 10kt 所需平飞 NM（FCTM≈0.7）</label>
+        <input type="number" id="dec6" value="0.7" min="0.2" max="1.5" step="0.1" style="width:100%">
+      </div>
+    </div>
+    <div class="result" id="res6"></div>
+  </div>
+</section>
+
 <section id="t1" hidden>
   <div class="card">
     <h2>航站区域平飞（机场标高）· 全构型 <span class="tag">QRH 空速不可靠/穿越颠簸</span></h2>
@@ -694,9 +722,55 @@ $('#icao').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefaul
 
 /* init: 等待选择机型后再计算（renderModelPick 回调触发） */
 
-if(false) {
+if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js').then(()=>{$('#offline').textContent='✓ 已缓存';}).catch(()=>{});
 }
+
+
+
+/* ══════════ TAB6: 高距比 descent profile check ══════════ */
+function calc6(){
+  const alt=+$('#alt6').value, elev=+$('#elev6').value,
+        dist=+$('#dist6').value, spd=+$('#spd6').value,
+        tgt=+$('#tgt6').value, ratio=+$('#ratio6').value||1, dec=+$('#dec6').value||0.7;
+  const ok = isFinite(alt)&&isFinite(dist)&&isFinite(spd)&& (alt-elev)>0;
+  let h='';
+  if(!ok){
+    h='<div class="rc warn">请输入：当前高度、机场标高、距跑道距离、当前速度</div>';
+    $('#res6').innerHTML=h; return;
+  }
+  const dh = alt - elev;                       // 高度差 m
+  const dhFt = dh * 3.28084;                   // ft
+  const dAlt = dh/100 * ratio;                 // 高度折算距离 NM
+  let dDec = 0;
+  if(spd > tgt){ dDec = (spd - tgt)/10 * dec; }// 减速距离 NM（平飞）
+  const need = dAlt + dDec;                    // 所需总距离
+  const diff = dist - need;                    // >0 富余(偏高对剖面上有富余距离?) 见下面语义
+  // 语义：need = 从当前状态减速下降到机场标高+目标速度所需距离
+  // dist > need → 距离富余 = 需要更陡/可以晚下；实际偏高（比3:1剖面高）
+  const diffFt = diff / Math.max(ratio,0.01) * 100; // 富余距离折回高度 m（按同系数）
+  const col = Math.abs(diff)<1 ? 'ok' : (diff>0 ? 'warn' : 'bad');
+  const verdict = Math.abs(diff)<1 ? '剖面正常（±1NM内）'
+    : diff>0 ? `偏高约 ${diffFt.toFixed(0)} m（${(diffFt*3.28084).toFixed(0)} ft）`
+    : `偏低约 ${(-diffFt).toFixed(0)} m（${(-diffFt*3.28084).toFixed(0)} ft）`;
+  h+= `<div class="rc ${col}"><div class="rk">高度差</div><div class="rv">${dh.toFixed(0)} m · ${dhFt.toFixed(0)} ft</div></div>`;
+  h+= `<div class="rc"><div class="rk">高度折算距离</div><div class="rv">${dAlt.toFixed(1)} NM</div></div>`;
+  if(spd>tgt) h+= `<div class="rc"><div class="rk">减速 ${spd}→${tgt} kt</div><div class="rv">${dDec.toFixed(1)} NM</div></div>`;
+  else h+= `<div class="rc"><div class="rk">减速</div><div class="rv">已≤目标速度</div></div>`;
+  h+= `<div class="rc"><div class="rk">所需总距离</div><div class="rv">${need.toFixed(1)} NM</div></div>`;
+  h+= `<div class="rc ${col}"><div class="rk">实际距离</div><div class="rv">${dist.toFixed(1)} NM</div></div>`;
+  h+= `<div class="rc ${col}"><div class="rk">偏差</div><div class="rv">${diff>0?'+':''}${diff.toFixed(1)} NM · ${verdict}</div></div>`;
+  $('#res6').innerHTML=h;
+}
+['alt6','elev6','dist6','spd6','tgt6','ratio6','dec6'].forEach(id=>{
+  $('#'+id).oninput=calc6; $('#'+id).onchange=calc6;
+});
+try{ /* 系数本机记忆 */
+  ['ratio6','dec6'].forEach(id=>{
+    const sv=localStorage.getItem('uas737_'+id); if(sv!==null) $('#'+id).value=sv;
+    $('#'+id).onchange=()=>localStorage.setItem('uas737_'+id, $('#'+id).value);
+  });
+}catch(x){}
 </script>
 </body>
 </html>
