@@ -1,4 +1,4 @@
-const CACHE = 'uas737-v5';
+const CACHE = 'uas737-v6';
 const ASSETS = [
   './',
   './index.html',
