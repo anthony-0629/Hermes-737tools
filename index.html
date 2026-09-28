@@ -420,6 +420,8 @@ document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   document.querySelectorAll('#appBody > section').forEach(x=>x.hidden=true);
   $('#t5').hidden=true;
   $('#stepM').hidden=(t.dataset.t==='t5');
+  /* 机场条件卡片仅在与性能计算相关的页面显示：记忆项目(t4)、反馈(t5)不需要 */
+  $('#wxCard').hidden=!( ['t0','t1','t2','t3','t6'].includes(t.dataset.t) && MODEL );
   t.classList.add('on'); $('#'+t.dataset.t).hidden=false;
 });
 
