@@ -247,7 +247,7 @@ if ('serviceWorker' in navigator) {
 <section id="t6" hidden>
   <div class="card">
     <h2>高距比 · 口算修正值</h2>
-    <p class="note" style="margin:6px 0 10px">口算方法：<b>当前高度m ÷ 100 ＋ 下方修正值</b>，与 CDU/进程页距跑道 NM 对比：<b>数值大 = 偏高，小 = 偏低</b>。<br>修正值 = 进近类型 + 速度 − 标高(ft转m)÷100 ＋ 风（自行增减，1NM为单位）。</p>
+    <p class="note" style="margin:6px 0 10px">口算方法：<b>当前高度m ÷ 100 ＋ 下方修正值</b>，与 FIX页面距跑道距离或CDU进程页总距离 对比：<b>数值大 = 偏高，小 = 偏低</b>。<br>修正值 = 进近类型 + 速度 − 标高(ft转m)÷100 ＋ 风（自行增减，1NM为单位）。</p>
     <div class="grid">
       <div><label>机场标高 ft（METAR一键获取自动填入）</label><input type="number" id="elevft6" placeholder="如 100" step="1"></div>
     </div>
@@ -787,7 +787,7 @@ function calc6(){
   h+=`<div class="big6"><div class="lab">修正值</div><div class="num${corr<0?' neg':''}">${corr>=0?'+':''}${corr}</div><div class="unit">NM</div></div>`;
   const spdLab = spd.d===null ? '其他'+(isFinite(spdCustom)?(spdCustom>0?'+':'')+spdCustom:'') : spd.name.split(' ')[0]+' '+(spdD>=0?'+':'−')+Math.abs(spdD);
   h+=`<div class="bd6">明细：${app.name.split(' ')[0]} ${app.d>=0?'+':'−'}${Math.abs(app.d)} ｜ ${spdLab} ｜ 风 ${windNm>0?'+':''}${windNm} ｜ −标高 ${elevNm.toFixed(2)}（${elevFt||0}ft）</div>`;
-  h+=`<div class="hint6">PFD高度m ÷ 100 <b>${corr>=0?'+':'−'} ${Math.abs(corr)}</b> ↔ CDU距跑道 NM ｜ 左大 = 偏高 · 左小 = 偏低</div>`;
+  h+=`<div class="hint6">PFD高度m ÷ 100 <b>${corr>=0?'+':'−'} ${Math.abs(corr)}</b> ↔ FIX距跑道/CDU进程页总距离 NM ｜ 左大 = 偏高 · 左小 = 偏低</div>`;
   $('#res6').innerHTML=h;
 }
 ['elevft6'].forEach(id=>{ $('#'+id).oninput=calc6; $('#'+id).onchange=calc6; });
