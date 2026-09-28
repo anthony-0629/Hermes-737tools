@@ -740,18 +740,28 @@ const APP_TYPES=[
 ];
 const SPD_TIERS=[
   {id:'s300', name:'300kt (+15NM)', d:15},
-  {id:'s250', name:'250kt (+10NM)', d:10},
+  {id:'s280', name:'280kt (+10NM)', d:10},
+  {id:'s250', name:'250kt (+7NM)',  d:7},
   {id:'s210', name:'210kt (+5NM)',  d:5},
-  {id:'s170', name:'170kt (0NM)',   d:0}
+  {id:'s170', name:'170kt (0NM)',   d:0},
+  {id:'sxxx', name:'其他（自输）',   d:null}
 ];
 let appSel=null, spdSel=null, windNm=0;
+let spdCustom=0; /* 其他：自输修正量 NM */
 function renderPick6(){
   const mk=(host,list,sel,set)=>{ host.innerHTML=''; list.forEach(t=>{
     const p=document.createElement('div'); p.className='pill'+(sel===t.id?' on':'');
+    if(t.id==='sxxx'){
+      p.innerHTML=t.name+'<input type="number" id="spdCustom6" step="1" value="'+spdCustom+'" min="-99" max="99" style="width:64px;margin-top:4px;text-align:center" onclick="event.stopPropagation()">';
+      p.onclick=()=>{set(t.id);renderPick6();calc6();};
+      host.appendChild(p); return;
+    }
     p.innerHTML=t.name+(t.hint?'<div style="font-size:10px;color:var(--dim);margin-top:2px">'+t.hint+'</div>':'');
     p.onclick=()=>{set(t.id);renderPick6();calc6();}; host.appendChild(p); }); };
   mk($('#appTypePick'),APP_TYPES,appSel,v=>appSel=v);
   mk($('#spdPick'),SPD_TIERS,spdSel,v=>spdSel=v);
+  const ci=$('#spdCustom6');
+  if(ci){ ci.oninput=()=>{ spdCustom=+ci.value||0; calc6(); }; ci.onchange=()=>{ spdCustom=+ci.value||0; calc6(); }; }
   // wind stepper
   const w=$('#windPick'); w.innerHTML='';
   const mkBtn=(txt,fn)=>{ const b=document.createElement('div'); b.className='pill'; b.textContent=txt; b.onclick=fn; w.appendChild(b); };
@@ -770,11 +780,13 @@ function calc6(){
     $('#res6').innerHTML=h; return;
   }
   const app=APP_TYPES.find(t=>t.id===appSel), spd=SPD_TIERS.find(t=>t.id===spdSel);
+  const spdD = spd.d===null ? spdCustom : spd.d;
   const elevM=(isFinite(elevFt)?elevFt:0)*0.3048;
   const elevNm=elevM/100;
-  const corr=Math.round(app.d+spd.d+windNm-elevNm);
+  const corr=Math.round(app.d+spdD+windNm-elevNm);
   h+=`<div class="big6"><div class="lab">修正值</div><div class="num${corr<0?' neg':''}">${corr>=0?'+':''}${corr}</div><div class="unit">NM</div></div>`;
-  h+=`<div class="bd6">明细：${app.name.split(' ')[0]} ${app.d>=0?'+':'−'}${Math.abs(app.d)} ｜ ${spd.name.split(' ')[0]} ${spd.d>=0?'+':'−'}${Math.abs(spd.d)} ｜ 风 ${windNm>0?'+':''}${windNm} ｜ −标高 ${elevNm.toFixed(2)}（${elevFt||0}ft）</div>`;
+  const spdLab = spd.d===null ? '其他'+(isFinite(spdCustom)?(spdCustom>0?'+':'')+spdCustom:'') : spd.name.split(' ')[0]+' '+(spdD>=0?'+':'−')+Math.abs(spdD);
+  h+=`<div class="bd6">明细：${app.name.split(' ')[0]} ${app.d>=0?'+':'−'}${Math.abs(app.d)} ｜ ${spdLab} ｜ 风 ${windNm>0?'+':''}${windNm} ｜ −标高 ${elevNm.toFixed(2)}（${elevFt||0}ft）</div>`;
   h+=`<div class="hint6">PFD高度m ÷ 100 <b>${corr>=0?'+':'−'} ${Math.abs(corr)}</b> ↔ CDU距跑道 NM ｜ 左大 = 偏高 · 左小 = 偏低</div>`;
   $('#res6').innerHTML=h;
 }
