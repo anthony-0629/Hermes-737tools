@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>【试用v3.1】737工具 · 记忆项目库</title>
+<title>【试用v3.2】737工具 · 记忆项目库</title>
 <style>
 :root{
   --bg:#0d141d; --panel:#16202e; --panel2:#1c2a3c; --line:#2b3d54;
@@ -345,6 +345,7 @@ tr.sel td{background:rgba(79,195,247,.10);}
       <div><label>刹车时指示空速 kt</label><input type="number" id="v7" step="1" placeholder="如 130"></div>
       <div><label>风修正</label><div class="row" id="windDir7" style="margin:0"></div></div>
       <div><label>风量 kt</label><input type="number" id="wk7" step="1" placeholder="如 10"></div>
+      <div><label>跑道方向 °（选填，自动算顶/顺风分量）</label><input type="number" id="rwyDir7" step="10" placeholder="如 30"></div>
     </div>
     <div class="grid" id="gsBox7" hidden>
       <div><label>刹车时地速 kt（按海平面＋15℃查表）</label><input type="number" id="gs7" step="1" placeholder="如 140"></div>
@@ -746,7 +747,20 @@ function renderWx(I, elev, raw, cachedAtMs){
   if(p.qnh!=null){ const el=$('#qnh2'); if(el) el.value=p.qnh; h+='<div class="wxkv"><div class="l">QNH</div><div class="v">'+p.qnh+' hPa</div></div>'; }
   if(p.qnh!=null && elev!=null){ const a3=$('#alt3'); if(a3) a3.value=Math.round(elev+(1013-p.qnh)*27); }
   if(elev!=null){ const pa7=$('#pa7'); if(pa7){ pa7.value=Math.round((elev+(p.qnh!=null?(1013-p.qnh)*27:0))/100)/10; if(typeof calc7==='function') calc7(); } }
-  if(p.tmp!=null){ ['oat0','oat1','tmp2','oat7'].forEach(id=>{ const el=$('#'+id); if(el) el.value=p.tmp; }); h+='<div class="wxkv"><div class="l">温度</div><div class="v">'+p.tmp+' ℃</div></div>'; }
+  if(p.wd!=null&&p.ws!=null){
+    const wk=$('#wk7'), rd=$('#rwyDir7');
+    let rv=0, comp=0;
+    if(wk){
+      rv=+(rd&&rd.value)||0;
+      if(rv){
+        comp=p.ws*Math.cos((p.wd-rv)*Math.PI/180);
+        if(typeof B7!=='undefined'){ B7.windTW=comp<0; if(typeof mk7==='function') mk7($('#windDir7'), [[false,'顶风（×0.5减）'],[true,'顺风（×1.5加）']], 'windTW', calc7); }
+        wk.value=Math.round(Math.abs(comp));
+      } else wk.value=p.ws;
+    }
+    h+='<div class="wxkv"><div class="l">风（已代填刹车冷却页）</div><div class="v">'+p.wd+'° / '+p.ws+' kt'+(p.gst?' 阵风'+p.gst:'')+(rv?(' → '+(comp>=0?'顶风':'顺风')+Math.abs(Math.round(comp))+'kt'):'')+'</div></div>';
+  }
+  if(p.tmp!=null){ ['oat0','oat1','tmp2','oat7'].forEach(id=>{ const el=$('#'+id); if(el) el.value=p.tmp; }); if(typeof calc7==='function') calc7(); h+='<div class="wxkv"><div class="l">温度</div><div class="v">'+p.tmp+' ℃</div></div>'; }
   if(p.dew!=null) h+='<div class="wxkv"><div class="v" style="font-size:15px">'+p.dew+' ℃</div><div class="l">露点</div></div>';
   let wtxt='—';
   if(p.wd!=null&&p.ws!=null) wtxt=p.wd+'° / '+p.ws+' kt'+(p.gst?' 阵风'+p.gst:'');
@@ -769,7 +783,7 @@ function renderWx(I, elev, raw, cachedAtMs){
     html+='<div class="wxage old">📦 离线缓存 · '+p3(ft.getUTCHours())+':'+p3(ft.getUTCMinutes())+'（北京）获取，联网后请重新获取最新报文</div>';
   }
   html+='<div class="wxraw">'+raw+'</div>';
-  html+='<p class="note" style="margin:8px 0 0">✅ 已自动填入：标高 / QNH / 温度（各页签输入框）；刹车冷却页压力高度＝标高＋(1013−QNH)×27ft 自动换算。<b>⚠️ 风为METAR场面风，仅供参考——抬轮页「风分量」与五边页「风增量」请自行换算输入，本工具不代填。</b></p>';
+  html+='<p class="note" style="margin:8px 0 0">✅ 已自动填入：标高 / QNH / 温度（各页签输入框）；刹车冷却页压力高度＝标高＋(1013−QNH)×27ft 自动换算，气象风已代填（填跑道方向°则自动换算顶/顺风分量）。<b>⚠️ 风为METAR场面风，仅供参考——抬轮页「风分量」与五边页「风增量」请自行换算输入，本工具不代填。</b></p>';
   return html;
 }
 function fillFromWx(icao){
@@ -941,7 +955,7 @@ mk7($('#spdTypePick7'), [[false,'指示空速＋风修正'],[true,'地速（海�
   $('#iasBox7').hidden=B7.gs; $('#gsBox7').hidden=!B7.gs; calc7();
 });
 mk7($('#windDir7'), [[false,'顶风（×0.5减）'],[true,'顺风（×1.5加）']], 'windTW', calc7);
-['v7','wk7','gs7','wt7','oat7','pa7','taxi7','resid7'].forEach(id=>{
+['v7','wk7','rwyDir7','gs7','wt7','oat7','pa7','taxi7','resid7'].forEach(id=>{
   const el=$('#'+id);
   el.oninput=calc7; el.onchange=calc7;
 });
