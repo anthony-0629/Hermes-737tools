@@ -356,8 +356,8 @@ tr.sel td{background:rgba(79,195,247,.10);}
     </div>
     <h3 style="color:var(--acc);font-size:14px;margin:12px 0 6px">⑥ 条件</h3>
     <div class="grid">
-      <div><label id="wtL7">着陆重量 吨</label><input type="number" id="wt7" step="0.5" placeholder="如 65"></div>
-      <div><label id="paL7">机场压力高度 千英尺</label><input type="number" id="pa7" step="0.5" placeholder="如 2"></div>
+      <div><label id="wtL7">重量 KG</label><input type="number" id="wt7" step="500" placeholder="如 65000"></div>
+      <div><label id="paL7">高度 FT</label><input type="number" id="pa7" step="100" placeholder="如 2000"></div>
       <div><label>外界温度 ℃</label><input type="number" id="oat7" step="1" placeholder="如 30"></div>
       <div><label>滑行距离 海里</label><input type="number" id="taxi7" step="0.5" placeholder="如 1"></div>
       <div><label>残余能量（上次刹车，选填）</label><input type="number" id="resid7" step="0.5" placeholder="如 10"></div>
@@ -751,7 +751,7 @@ function renderWx(I, elev, raw, cachedAtMs){
   let h='';
   if(p.qnh!=null){ const el=$('#qnh2'); if(el) el.value=p.qnh; h+='<div class="wxkv"><div class="l">QNH</div><div class="v">'+p.qnh+' hPa</div></div>'; }
   if(p.qnh!=null && elev!=null){ const a3=$('#alt3'); if(a3) a3.value=Math.round(elev+(1013-p.qnh)*27); }
-  if(elev!=null){ const pa7=$('#pa7'); if(pa7){ pa7.value=Math.round((elev+(p.qnh!=null?(1013-p.qnh)*27:0))/100)/10; if(typeof calc7==='function') calc7(); } }
+  if(elev!=null){ const pa7=$('#pa7'); if(pa7){ pa7.value=Math.round(elev+(p.qnh!=null?(1013-p.qnh)*27:0)); if(typeof calc7==='function') calc7(); } }
   if(p.wd!=null&&p.ws!=null){
     const wk=$('#wk7'), rd=$('#rwyDir7');
     let rv=0, comp=0;
@@ -964,8 +964,8 @@ function ERof(c, W, oat, V, pa){
   return wp.length? liN(wp, W) : null;
 }
 const B7={ac:'800', use:'lmax', rev:true, cool:'gnd', gs:false, windTW:false};
-const ACS7=[['700','737-700W'],['700h','737-700W 高高度'],['800','737-800W'],['8','737-8']];
-const COOLS7=[['air','空中放起落架'],['gnd','地面等待']];
+const ACS7=[['800','B737-800'],['700','B737-700'],['700h','B737-700高高度'],['8','B737-8']];
+const COOLS7=[['gnd','地面'],['air','空中起落架放下']];
 const BUSES=[['rto','中断起飞·最大人工'],['lmax','着陆·最大人工'],['lauto','着陆·最大自动'],['ab3','着陆·自动刹车3'],['ab2','着陆·自动刹车2'],['ab1','着陆·自动刹车1']];
 function mk7(el, arr, key, cb){
   el.innerHTML='';
@@ -976,7 +976,7 @@ function mk7(el, arr, key, cb){
   });
 }
 mk7($('#acPick7'), ACS7, 'ac', ()=>{ upd7l(); calc7(); });
-mk7($('#revPick7'), [[true,'双发反推'],[false,'无反推']], 'rev', calc7);
+mk7($('#revPick7'), [[true,'使用双发反推'],[false,'无反推']], 'rev', calc7);
 mk7($('#usePick7'), BUSES, 'use', calc7);
 mk7($('#coolPick7'), COOLS7, 'cool', calc7);
 mk7($('#spdTypePick7'), [[false,'指示空速＋风修正'],[true,'地速（海平面15℃）']], 'gs', ()=>{
@@ -986,8 +986,8 @@ mk7($('#windDir7'), [[false,'顶风（×0.5减）'],[true,'顺风（×1.5加）'
 function upd7l(){
   const T=B7D[B7.ac];
   const C=T.A||T.chart;
-  $('#wtL7').textContent=`着陆重量 吨（${C.w[0]}–${C.w[C.w.length-1]}）`;
-  $('#paL7').textContent=`机场压力高度 千英尺（${T.paR[0]}–${T.paR[1]}）`;
+  $('#wtL7').textContent=`重量 KG（${C.w[0]*1000}–${C.w[C.w.length-1]*1000}）`;
+  $('#paL7').textContent=`高度 FT（${T.paR[0]*1000}–${T.paR[1]*1000}）`;
 }
 ['v7','wk7','rwyDir7','gs7','wt7','oat7','pa7','taxi7','resid7'].forEach(id=>{
   const el=$('#'+id);
@@ -996,14 +996,14 @@ function upd7l(){
 $('#q7').onclick=()=>{ calc7(); const r=$('#res7'); r.style.outline='2px solid var(--acc)'; setTimeout(()=>{r.style.outline='';},450); };
 function calc7(){
   const T=B7D[B7.ac];
-  let V, oat=+($('#oat7').value||0), pa=+($('#pa7').value||0);
+  let V, oat=+($('#oat7').value||0), pa=+($('#pa7').value||0)/1000;
   if(B7.gs){ V=+($('#gs7').value||0); oat=15; pa=0; }
   else{
     V=+($('#v7').value||0);
     const wk=+($('#wk7').value||0);
     V += B7.windTW ? 1.5*wk : -0.5*wk;
   }
-  const W=+($('#wt7').value||0), taxi=+($('#taxi7').value||0), resid=+($('#resid7').value||0);
+  const W=+($('#wt7').value||0)/1000, taxi=+($('#taxi7').value||0), resid=+($('#resid7').value||0);
   if(!V||!W){ $('#res7').innerHTML=''; $('#zone7').textContent=''; return; }
   const chart = T.A ? (pa<=10 ? T.A : T.B) : T.chart;
   const WR = chart.w;
@@ -1028,17 +1028,17 @@ function calc7(){
   const U=BUSES.find(x=>x[0]===B7.use)[1];
   $('#res7').innerHTML = `
     <div class="kv" style="grid-column:1/-1"><div class="k">修正后刹车总能量（百万英尺磅/每刹车）</div><div class="v">${tot.toFixed(1)}</div></div>
-    <div class="kv"><div class="k">冷却时间（${B7.cool==='air'?'空中放起落架':'地面等待'}）</div><div class="v" style="color:${zc}">${zbig}</div></div>
+    <div class="kv"><div class="k">冷却时间（${B7.cool==='air'?'空中起落架放下':'地面'}）</div><div class="v" style="color:${zc}">${zbig}</div></div>
     <div class="kv"><div class="k">状态</div><div class="v" style="color:${zc}">${zone}</div></div>
     <div class="kv"><div class="k">刹车能量基准 E_R</div><div class="v" style="font-size:22px">${ER.toFixed(1)}</div></div>
     <div class="kv"><div class="k">本次刹车增加 E_B</div><div class="v" style="font-size:22px">${EB.toFixed(1)}</div></div>
     <div class="kv"><div class="k">BTMS预计指示</div><div class="v" style="font-size:22px">${btms.toFixed(1)}</div></div>`;
-  const vc = B7.gs ? `地速${V.toFixed(0)}kt（海平面＋15℃）` : `表速${(+$('#v7').value).toFixed(0)}kt${(+($('#wk7').value||0))?(B7.windTW?'＋顺风×1.5':'－顶风×0.5')+'＝修正'+V.toFixed(0)+'kt':''}（${oat}℃/PA${pa}kft）`;
+  const vc = B7.gs ? `地速${V.toFixed(0)}kt（海平面＋15℃）` : `表速${(+$('#v7').value).toFixed(0)}kt${(+($('#wk7').value||0))?(B7.windTW?'＋顺风×1.5':'－顶风×0.5')+'＝修正'+V.toFixed(0)+'kt':''}（${oat}℃/PA${Math.round(pa*1000)}ft）`;
   const lim=[];
-  if(W<WR[0]||W>WR[WR.length-1]) lim.push(`重量${W}t超出图表${WR[0]}–${WR[WR.length-1]}t（按边界计算）`);
-  if(pa<T.paR[0]||pa>T.paR[1]) lim.push(`PA${pa}千英尺超出${T.paR[0]}–${T.paR[1]}（按边界计算）`);
+  if(W<WR[0]||W>WR[WR.length-1]) lim.push(`重量超出图表${WR[0]*1000}–${WR[WR.length-1]*1000}KG（按边界计算）`);
+  if(pa<T.paR[0]||pa>T.paR[1]) lim.push(`高度超出${T.paR[0]*1000}–${T.paR[1]*1000}FT（按边界计算）`);
   const spR=chart.sp; if(V<spR[0]||V>spR[spR.length-1]) lim.push(`速度超出${spR[0]}–${spR[spR.length-1]}kt（按边界计算）`);
-  $('#zone7').innerHTML = `<b>${ACS7.find(x=>x[0]===B7.ac)[1]}｜${U}｜${B7.rev?'双发反推':'无反推'}｜${W}t｜${vc}｜滑行${taxi}NM${T.taxi3?`（每NM＋${tnm}）`:''}＋${resid? '残余'+resid : '无残余'}</b><br>${zt}${lim.length?'<br><span style="color:#c98a1a">'+lim.join('；')+'</span>':''}`;
+  $('#zone7').innerHTML = `<b>${ACS7.find(x=>x[0]===B7.ac)[1]}｜${U}｜${B7.rev?'双发反推':'无反推'}｜${Math.round(W*1000)}KG｜${vc}｜滑行${taxi}NM${T.taxi3?`（每NM＋${tnm}）`:''}＋${resid? '残余'+resid : '无残余'}</b><br>${zt}${lim.length?'<br><span style="color:#c98a1a">'+lim.join('；')+'</span>':''}`;
 }
 upd7l();
 
