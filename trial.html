@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>【试用v3.4】737工具 · 记忆项目库</title>
+<title>【试用v3.5】737工具 · 记忆项目库</title>
 <style>
 :root{
   --bg:#0d141d; --panel:#16202e; --panel2:#1c2a3c; --line:#2b3d54;
@@ -150,11 +150,11 @@ tr.sel td{background:rgba(79,195,247,.10);}
   <div class="card">
     <h2>② 起飞抬轮：VR → 地速 + 基准构型参数</h2>
     <div class="grid">
-      <div><label>VR（计算出的表速）kt</label><input type="number" id="vr" value="150" min="100" max="220" step="1"></div>
-      <div><label>重量 t</label><input type="number" id="w0" value="65" min="40" max="90" step="0.5"></div>
-      <div><label>机场标高 ft</label><input type="number" id="e0" value="0" min="-2000" max="14000" step="100"></div>
-      <div><label>外界温度 OAT ℃</label><input type="number" id="oat0" value="15" min="-60" max="60" step="1"></div>
-      <div><label>风分量（顶风＋/顺风－）kt</label><input type="number" id="wind" value="0" min="-80" max="80" step="1"></div>
+      <div><label>VR（计算出的表速）kt</label><input inputmode="numeric" type="number" id="vr" value="150" min="100" max="220" step="1"></div>
+      <div><label>重量 t</label><input inputmode="decimal" type="number" id="w0" value="65" min="40" max="90" step="0.5"></div>
+      <div><label>机场标高 ft</label><input inputmode="numeric" type="number" id="e0" value="0" min="-2000" max="14000" step="100"></div>
+      <div><label>外界温度 OAT ℃</label><input inputmode="numeric" type="number" id="oat0" value="15" min="-60" max="60" step="1"></div>
+      <div><label>风分量（顶风＋/顺风－）kt</label><input inputmode="numeric" type="number" id="wind" value="0" min="-80" max="80" step="1"></div>
     </div>
     <div class="result">
       <div class="kv"><div class="l">抬轮地速 GS</div><div class="v" id="gs0">--</div><div class="u">kt</div></div>
@@ -185,10 +185,10 @@ tr.sel td{background:rgba(79,195,247,.10);}
     <h2>② 五边进近基准（1500ft · 起落架放下 · 下滑道3°）</h2>
     <p class="note" style="margin:6px 0 10px">手册基准：<b>QNH 1013 hPa · ISA 15℃ · 静风</b>（不可修改）。下方三张卡为该基准下的各构型 N1。</p>
     <div class="grid">
-      <div><label>重量 t</label><input type="number" id="w2" value="65" min="40" max="90" step="0.5"></div>
-      <div><label>机场标高 ft</label><input type="number" id="e2" value="0" min="-2000" max="14000" step="100"></div>
-      <div><label>基准 QNH（不可改）</label><input type="number" id="qnh2b" value="1013" readonly disabled style="opacity:.55"></div>
-      <div><label>基准温度 ℃（不可改）</label><input type="number" id="oat2" value="15" readonly disabled style="opacity:.55"></div>
+      <div><label>重量 t</label><input inputmode="decimal" type="number" id="w2" value="65" min="40" max="90" step="0.5"></div>
+      <div><label>机场标高 ft</label><input inputmode="numeric" type="number" id="e2" value="0" min="-2000" max="14000" step="100"></div>
+      <div><label>基准 QNH（不可改）</label><input inputmode="numeric" type="number" id="qnh2b" value="1013" readonly disabled style="opacity:.55"></div>
+      <div><label>基准温度 ℃（不可改）</label><input inputmode="numeric" type="number" id="oat2" value="15" readonly disabled style="opacity:.55"></div>
     </div>
     <div class="result" id="apprAll"></div>
 
@@ -197,23 +197,23 @@ tr.sel td{background:rgba(79,195,247,.10);}
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
       <div style="background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px">
         <label style="font-size:12px;color:var(--dim)">当前 QNH hPa</label>
-        <input type="number" id="qnh2" value="1013" min="900" max="1080" step="1" style="width:100%">
+        <input inputmode="numeric" type="number" id="qnh2" value="1013" min="900" max="1080" step="1" style="width:100%">
         <div style="text-align:center;color:var(--acc);font-size:16px;margin:2px 0">↓ 每±10hPa</div>
-        <input type="number" id="rQ2" value="1" min="0" max="5" step="0.1" style="width:100%">
+        <input inputmode="decimal" type="number" id="rQ2" value="1" min="0" max="5" step="0.1" style="width:100%">
         <label style="font-size:12px;color:var(--dim)">N1 ±%</label>
       </div>
       <div style="background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px">
         <label style="font-size:12px;color:var(--dim)">当前温度 ℃（基准15）</label>
-        <input type="number" id="tmp2" value="15" min="-60" max="60" step="1" style="width:100%">
+        <input inputmode="numeric" type="number" id="tmp2" value="15" min="-60" max="60" step="1" style="width:100%">
         <div style="text-align:center;color:var(--acc);font-size:16px;margin:2px 0">↓ 每±10℃</div>
-        <input type="number" id="rT2" value="1" min="0" max="5" step="0.1" style="width:100%">
+        <input inputmode="decimal" type="number" id="rT2" value="1" min="0" max="5" step="0.1" style="width:100%">
         <label style="font-size:12px;color:var(--dim)">N1 ±%</label>
       </div>
       <div style="background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px">
         <label style="font-size:12px;color:var(--dim)">风增量 kt（基准10）</label>
-        <input type="number" id="wind2" value="10" min="-10" max="40" step="1" style="width:100%">
+        <input inputmode="numeric" type="number" id="wind2" value="10" min="-10" max="40" step="1" style="width:100%">
         <div style="text-align:center;color:var(--acc);font-size:16px;margin:2px 0">↓ 每±10kt</div>
-        <input type="number" id="rW2" value="1" min="0" max="5" step="0.1" style="width:100%">
+        <input inputmode="decimal" type="number" id="rW2" value="1" min="0" max="5" step="0.1" style="width:100%">
         <label style="font-size:12px;color:var(--dim)">N1 ±%</label>
       </div>
     </div>
@@ -223,7 +223,7 @@ tr.sel td{background:rgba(79,195,247,.10);}
     <div class="grid">
       <div style="display:flex;align-items:center;gap:6px">
         <button class="nud" onclick="nudN1(-1)">−</button>
-        <div style="flex:1"><label>经验 N1 修正 ±%</label><input type="number" id="exp2" value="0" step="0.1"></div>
+        <div style="flex:1"><label>经验 N1 修正 ±%</label><input inputmode="decimal" type="number" id="exp2" value="0" step="0.1"></div>
         <button class="nud" onclick="nudN1(1)">＋</button>
       </div>
     </div>
@@ -246,8 +246,8 @@ tr.sel td{background:rgba(79,195,247,.10);}
       <span class="pill" data-ga="flap15">襟翼 15</span>
     </div>
     <div class="grid">
-      <div><label>重量 t</label><input type="number" id="w3" value="65" min="40" max="80" step="0.5"></div>
-      <div><label>压力高度 ft</label><input type="number" id="alt3" value="0" min="-2000" max="14000" step="500"></div>
+      <div><label>重量 t</label><input inputmode="decimal" type="number" id="w3" value="65" min="40" max="80" step="0.5"></div>
+      <div><label>压力高度 ft</label><input inputmode="numeric" type="number" id="alt3" value="0" min="-2000" max="14000" step="500"></div>
     </div>
     <div class="result" id="gaout"></div>
     <div style="margin-top:12px;overflow-x:auto"><table id="tbl3"></table></div>
@@ -261,7 +261,7 @@ tr.sel td{background:rgba(79,195,247,.10);}
     <h2>高距比 · 口算修正值</h2>
     <p class="note" style="margin:6px 0 10px">口算方法：<b>当前高度m ÷ 100 ＋ 下方修正值</b>，与 FIX页面距跑道距离或CDU进程页总距离 对比：<b>数值大 = 偏高，小 = 偏低</b>。<br>修正值 = 进近类型 + 速度 − 标高(ft转m)÷100 ＋ 风（自行增减，1NM为单位）。</p>
     <div class="grid">
-      <div><label>机场标高 ft（METAR一键获取自动填入）</label><input type="number" id="elevft6" placeholder="如 100" step="1"></div>
+      <div><label>机场标高 ft（METAR一键获取自动填入）</label><input inputmode="numeric" type="number" id="elevft6" placeholder="如 100" step="1"></div>
     </div>
     <h3 style="color:var(--acc);font-size:14px;margin:14px 0 6px">① 进近类型</h3>
     <div class="row" id="appTypePick"></div>
@@ -277,9 +277,9 @@ tr.sel td{background:rgba(79,195,247,.10);}
   <div class="card">
     <h2>航站区域平飞（机场标高）· 全构型 <span class="tag">QRH 空速不可靠/穿越颠簸</span></h2>
     <div class="grid">
-      <div><label>重量 t</label><input type="number" id="w1" value="65" min="40" max="80" step="0.5"></div>
-      <div><label>机场标高 ft</label><input type="number" id="e1" value="0" min="-2000" max="14500" step="100"></div>
-      <div><label>外界温度 OAT ℃</label><input type="number" id="oat1" value="15" min="-60" max="60" step="1"></div>
+      <div><label>重量 t</label><input inputmode="decimal" type="number" id="w1" value="65" min="40" max="80" step="0.5"></div>
+      <div><label>机场标高 ft</label><input inputmode="numeric" type="number" id="e1" value="0" min="-2000" max="14500" step="100"></div>
+      <div><label>外界温度 OAT ℃</label><input inputmode="numeric" type="number" id="oat1" value="15" min="-60" max="60" step="1"></div>
     </div>
     <div class="result">
       <div class="kv"><div class="l">基准 %N1</div><div class="v" id="n1r">--</div><div class="u">%</div></div>
@@ -347,21 +347,21 @@ tr.sel td{background:rgba(79,195,247,.10);}
     <h3 style="color:var(--acc);font-size:14px;margin:12px 0 6px">⑤ 速度类型</h3>
     <div class="row" id="spdTypePick7"></div>
     <div class="grid" id="iasBox7">
-      <div><label>刹车时指示空速 kt</label><input type="number" id="v7" step="1" placeholder="如 130"></div>
+      <div><label>刹车时指示空速 kt</label><input inputmode="numeric" type="number" id="v7" step="1" placeholder="如 130"></div>
       <div><label>风修正</label><div class="row" id="windDir7" style="margin:0"></div></div>
-      <div><label>风量 kt</label><input type="number" id="wk7" step="1" placeholder="如 10"></div>
-      <div><label>跑道方向 °（选填，自动算顶/顺风分量）</label><input type="number" id="rwyDir7" step="10" placeholder="如 30"></div>
+      <div><label>风量 kt</label><input inputmode="numeric" type="number" id="wk7" step="1" placeholder="如 10"></div>
+      <div><label>跑道方向 °（选填，自动算顶/顺风分量）</label><input inputmode="numeric" type="number" id="rwyDir7" step="10" placeholder="如 30"></div>
     </div>
     <div class="grid" id="gsBox7" hidden>
-      <div><label>刹车时地速 kt（按海平面＋15℃查表）</label><input type="number" id="gs7" step="1" placeholder="如 140"></div>
+      <div><label>刹车时地速 kt（按海平面＋15℃查表）</label><input inputmode="numeric" type="number" id="gs7" step="1" placeholder="如 140"></div>
     </div>
     <h3 style="color:var(--acc);font-size:14px;margin:12px 0 6px">⑥ 条件</h3>
     <div class="grid">
-      <div><label id="wtL7">重量 KG</label><input type="number" id="wt7" step="500" placeholder="如 65000"></div>
-      <div><label id="paL7">高度 FT</label><input type="number" id="pa7" step="100" placeholder="如 2000"></div>
-      <div><label>外界温度 ℃</label><input type="number" id="oat7" step="1" placeholder="如 30"></div>
-      <div><label>滑行距离 海里</label><input type="number" id="taxi7" step="0.5" placeholder="如 1"></div>
-      <div><label>残余能量（上次刹车，选填）</label><input type="number" id="resid7" step="0.5" placeholder="如 10"></div>
+      <div><label id="wtL7">重量 KG</label><input inputmode="numeric" type="number" id="wt7" step="500" placeholder="如 65000"></div>
+      <div><label id="paL7">高度 FT</label><input inputmode="numeric" type="number" id="pa7" step="100" placeholder="如 2000"></div>
+      <div><label>外界温度 ℃</label><input inputmode="numeric" type="number" id="oat7" step="1" placeholder="如 30"></div>
+      <div><label>滑行距离 海里</label><input inputmode="decimal" type="number" id="taxi7" step="0.5" placeholder="如 1"></div>
+      <div><label>残余能量（上次刹车，选填）</label><input inputmode="decimal" type="number" id="resid7" step="0.5" placeholder="如 10"></div>
     </div>
     <div style="margin:16px 0 4px"><button class="abtn" id="q7" style="width:100%;padding:13px;font-size:17px">查 询</button></div>
     <div class="result" id="res7"></div>
@@ -893,7 +893,7 @@ function renderPick6(){
   const mk=(host,list,sel,set)=>{ host.innerHTML=''; list.forEach(t=>{
     const p=document.createElement('div'); p.className='pill'+(sel===t.id?' on':'');
     if(t.id==='sxxx'){
-      p.innerHTML=t.name+'<input type="number" id="spdCustom6" step="1" value="'+spdCustom+'" min="-99" max="99" style="width:64px;margin-top:4px;text-align:center" onclick="event.stopPropagation()">';
+      p.innerHTML=t.name+'<input inputmode="numeric" type="number" id="spdCustom6" step="1" value="'+spdCustom+'" min="-99" max="99" style="width:64px;margin-top:4px;text-align:center" onclick="event.stopPropagation()">';
       p.onclick=()=>{set(t.id);renderPick6();calc6();};
       host.appendChild(p); return;
     }
