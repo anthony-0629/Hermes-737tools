@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>【试用v3.3.1】737工具 · 记忆项目库</title>
+<title>【试用v3.4】737工具 · 记忆项目库</title>
 <style>
 :root{
   --bg:#0d141d; --panel:#16202e; --panel2:#1c2a3c; --line:#2b3d54;
@@ -544,6 +544,7 @@ document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
   document.querySelectorAll('#appBody > section').forEach(x=>x.hidden=true);
   $('#t5').hidden=true;
+  $('#t7').hidden=true;
   $('#stepM').hidden=(t.dataset.t==='t5' || t.dataset.t==='t4');
   /* 记忆项目(t4)/反馈(t5)不依赖机型：直接解锁appBody，无需先选机型 */
   if(t.dataset.t==='t4' || t.dataset.t==='t5') $('#appBody').hidden=false;
