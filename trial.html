@@ -374,7 +374,7 @@ tr.sel td{background:rgba(79,195,247,.10);}
 <section id="t8" hidden>
   <div class="card">
     <h2>气象风 · 风修正</h2>
-    <p class="note" style="margin:6px 0 10px">数据源：SOP R4a GP.12.13–15（起飞/着陆气象风限制、进近速度风修正）。有阵风时用<b>最大阵风值的顶风/顺风和侧风分量</b>检查限制；限制＝道面代码×飞行阶段查表，低能见度运行或RVR/VIS≤1000M时叠加附加限制；阵风增量≥18kt禁止起飞、着陆。风修正＝稳定顶风一半＋全部阵风增量（自动着陆固定VREF+5，最小+5，最大+15）。</p>
+    <p class="note" style="margin:6px 0 10px">数据源：SOP R4a GP.12.13–15（起飞/着陆气象风限制、进近速度风修正）。有阵风时用<b>最大阵风值的顶风/顺风和侧风分量</b>检查限制；限制＝道面代码×飞行阶段查表，低能见度运行或RVR/VIS≤1000M时叠加附加限制；阵风增量≥18kt禁止起飞、着陆。风修正＝稳定顶风一半＋全部阵风增量（自动着陆固定VREF+5，最小+5，最大+15）。风速可输米/秒或KT，内部统一换算成KT后按SOP规则计算——限制与风修正结果以节（kts）为准。</p>
     <h3 style="color:var(--acc);font-size:14px;margin:12px 0 6px">① 条件</h3>
     <div class="row" style="flex-wrap:wrap;gap:8px;margin-bottom:8px">
       <div style="flex:1;min-width:170px"><label>是否低能见度运行</label><div class="row" id="lvoPick8"></div></div>
@@ -651,7 +651,8 @@ function calc8(){
   tb+='</table>';
   let html='<div class="kv" style="grid-column:1/-1"><div class="v" style="font-size:15px;color:var(--txt)">'+tb+'</div></div>';
   html+='<div class="kv" style="grid-column:1/-1"><div class="k">进近速度风修正（VREF＋）</div><div class="v" style="font-size:26px;color:'+cOk+'">'+corr.toFixed(0)+' 节</div></div>';
-  if(gust>0) html+='<div class="kv"><div class="k">稳定风</div><div class="v">'+f1(steady)+' kt</div></div><div class="kv"><div class="k">阵风</div><div class="v">'+f1(gust)+' kt</div></div><div class="kv"><div class="k">夹角/侧风分量</div><div class="v">'+Math.round(d)+'°</div></div>';
+  if(gust>0){ const du=(B8.wu==='ms')?['m/s',steady/1.94384,gust/1.94384]:['kt',steady,gust];
+    html+='<div class="kv"><div class="k">稳定风</div><div class="v">'+f1(du[1])+' '+du[0]+'</div></div><div class="kv"><div class="k">阵风</div><div class="v">'+f1(du[2])+' '+du[0]+'</div></div><div class="kv"><div class="k">夹角/侧风分量</div><div class="v">'+Math.round(d)+'°</div></div>'; }
   const cond=RCAM8.find(x=>x[0]===code)[1]+'｜'+(ph==='to'?'起飞':(ph==='tol'?'人工着陆':'自动着陆'))+(B8.lvo?'｜低能见':'')+(B8.rvr?'｜RVR≤1000M':'');
   let notesTxt='';
   if(forbid) notesTxt+='<b style="color:'+cBad+'">⛔ 本次条件禁止起飞/着陆</b><br>';
@@ -878,12 +879,12 @@ function renderWx(I, elev, raw, cachedAtMs){
       } else wk.value=p.ws;
     }
     h+='<div class="wxkv"><div class="l">风（已代填刹车冷却页）</div><div class="v">'+p.wd+'° / '+p.ws+' kt'+(p.gst?' 阵风'+p.gst:'')+(rv?(' → '+(comp>=0?'顶风':'顺风')+Math.abs(Math.round(comp))+'kt'):'')+'</div></div>';
-    /* t8 气象风页自动代填（换算为KT） */
+    /* t8 气象风页自动代填（换算为米/秒，算法仍按SOP以节计算） */
     const w8d=$('#wd8'), w8s=$('#ws8'), w8g=$('#gst8');
     if(w8d && w8s){
-      w8d.value=p.wd; w8s.value=p.ws; if(w8g) w8g.value=(p.gst!=null? p.gst : '');
-      if(typeof B8!=='undefined' && typeof mk8==='function'){ B8.wu='kt'; mk8($('#wuPick8'), WU8, 'wu'); if(typeof calc8==='function') calc8(); }
-      h+='<div class="wxkv"><div class="l">已代填风修正页</div><div class="v" style="color:var(--acc2)">风向/风速/阵风（KT）</div></div>';
+      w8d.value=p.wd; w8s.value=(p.ws/1.94384).toFixed(1); if(w8g) w8g.value=(p.gst!=null? (p.gst/1.94384).toFixed(1) : '');
+      if(typeof B8!=='undefined' && typeof mk8==='function'){ B8.wu='ms'; mk8($('#wuPick8'), WU8, 'wu'); if(typeof calc8==='function') calc8(); }
+      h+='<div class="wxkv"><div class="l">已代填风修正页</div><div class="v" style="color:var(--acc2)">风向/风速/阵风（米/秒）</div></div>';
     }
   }
   if(p.tmp!=null){ ['oat0','oat1','tmp2','oat7'].forEach(id=>{ const el=$('#'+id); if(el) el.value=p.tmp; }); if(typeof calc7==='function') calc7(); h+='<div class="wxkv"><div class="l">温度</div><div class="v">'+p.tmp+' ℃</div></div>'; }
